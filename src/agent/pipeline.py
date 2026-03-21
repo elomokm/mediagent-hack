@@ -3,9 +3,8 @@
 from datetime import datetime
 
 from src.agent.conversation import (
-    extract_patient_info,
     generate_greeting,
-    generate_next_question,
+    process_conversation_turn,
     has_sufficient_info,
 )
 from src.agent.triage import evaluate_urgency, is_life_threatening
@@ -72,18 +71,19 @@ class MediAgentPipeline:
         )
 
         for _ in range(MAX_CONVERSATION_TURNS):
-            question = generate_next_question(patient, self.history)
-            self._agent_says(question)
+            # UN SEUL appel emulate() par tour : extraction + question
+            history_text = "\n".join(self.history) if self.history else "Début de conversation."
+            step = process_conversation_turn(history_text)
+
+            patient = step.patient_info
+            self._agent_says(step.next_question)
+
+            if step.info_complete and has_sufficient_info(patient):
+                break
 
             response = input("\n> ")
-            self.history.append(f"Agent: {question}")
+            self.history.append(f"Agent: {step.next_question}")
             self.history.append(f"Patient: {response}")
-
-            history_text = "\n".join(self.history)
-            patient = extract_patient_info(history_text)
-
-            if has_sufficient_info(patient):
-                break
 
         return patient
 

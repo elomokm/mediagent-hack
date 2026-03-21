@@ -1,8 +1,18 @@
 """Gestion de la conversation téléphonique avec le patient."""
 
+from pydantic import BaseModel, Field
+
 from OpenHosta import emulate
 
 from src.models.schemas import PatientInput
+
+
+class ConversationStep(BaseModel):
+    """Résultat d'un tour de conversation — extraction + prochaine question en un seul appel."""
+
+    patient_info: PatientInput = Field(description="Informations patient extraites de toute la conversation jusqu'ici")
+    next_question: str = Field(description="Prochaine question à poser au patient")
+    info_complete: bool = Field(description="True si on a nom, âge, symptômes et durée. False sinon.")
 
 
 def generate_greeting(clinic_name: str, clinic_address: str) -> str:
@@ -16,45 +26,32 @@ def generate_greeting(clinic_name: str, clinic_address: str) -> str:
     return emulate()
 
 
-def extract_patient_info(conversation_text: str) -> PatientInput:
-    """Extrait les informations structurées du patient à partir du texte de la conversation.
+def process_conversation_turn(conversation_text: str) -> ConversationStep:
+    """Analyse la conversation et produit en UN SEUL appel : les infos patient extraites + la prochaine question.
 
     Le texte contient des lignes au format :
     Agent: <message de l'agent>
     Patient: <réponse du patient>
 
-    Extrais TOUTES les informations mentionnées par le patient :
-    - nom : le nom complet du patient. Si le patient dit "Je suis Elom" ou "Elom OKOUMASSOUN", extrais ce nom.
-    - age : l'âge en nombre entier. Si le patient dit "j'ai 35 ans", extrais 35.
+    ÉTAPE 1 — Extraction des infos patient :
+    Parcourir TOUTE la conversation et extraire :
+    - nom : nom complet du patient. Ex: "Je suis Elom" → nom = "Elom". "Elom OKOUMASSOUN" → nom = "Elom OKOUMASSOUN"
+    - age : âge en nombre entier. Ex: "j'ai 35 ans" → age = 35
     - sexe : "homme", "femme" ou "non précisé"
-    - symptomes : liste de TOUS les symptômes médicaux décrits par le patient
-    - duree_symptomes : depuis quand (ex: "2 semaines", "3 jours")
+    - symptomes : liste de TOUS les symptômes médicaux. Ex: "maux de tête et nausées" → ["maux de tête", "nausées"]
+    - duree_symptomes : depuis quand. Ex: "depuis 2 semaines" → "2 semaines"
     - antecedents : antécédents médicaux mentionnés
 
-    Valeurs par défaut si l'information n'est PAS dans la conversation :
-    - nom: "Inconnu", age: 0, sexe: "non précisé", symptomes: [], duree_symptomes: "non précisé"
-    """
-    return emulate()
+    Valeurs par défaut si NON mentionné : nom="Inconnu", age=0, sexe="non précisé", symptomes=[], duree_symptomes="non précisé"
 
+    ÉTAPE 2 — Prochaine question :
+    Poser UNE SEULE question pour obtenir la prochaine info manquante.
+    Priorité : 1) nom 2) âge 3) symptômes 4) durée des symptômes 5) antécédents
+    Si tout est collecté, demander si le patient a autre chose à ajouter.
+    Ton empathique, professionnel, sans jargon médical.
 
-def generate_next_question(
-    patient_partial: PatientInput,
-    conversation_history: list[str],
-) -> str:
-    """Génère la prochaine question à poser au patient pour compléter les informations manquantes.
-
-    Informations déjà collectées : {patient_partial}
-    Historique de la conversation : {conversation_history}
-
-    Priorité des questions :
-    1. Nom du patient (si inconnu)
-    2. Âge (si 0)
-    3. Symptômes principaux (si liste vide)
-    4. Depuis quand les symptômes sont présents (si non précisé)
-    5. Antécédents médicaux
-
-    Pose UNE SEULE question à la fois. Ton empathique, professionnel, sans jargon médical.
-    Si toutes les infos essentielles sont collectées, demande si le patient a autre chose à ajouter.
+    ÉTAPE 3 — info_complete :
+    True si nom != "Inconnu" ET age > 0 ET symptomes non vide ET duree_symptomes != "non précisé"
     """
     return emulate()
 
