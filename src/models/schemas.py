@@ -66,3 +66,9 @@ class SurveyAnalysis(BaseModel):
     sentiment: str
     key_themes: list[str]
     improvement_suggestions: list[str]
+
+class specialitemedical(str, Enum):
+    MEDECIN = "medecin"
+
+class Specialite(BaseModel):
+    medical : specialitemedical

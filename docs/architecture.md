@@ -143,15 +143,15 @@ src/
 | `Doctor` | Médecin (id, nom, spécialités, lieu) |
 | `DoctorSchedule` | Planning d'un médecin (slots dispo/réservés) |
 | `Clinic` | Clinique (nom, adresse, médecins, horaires) |
-| `CallStatus` | Enum : EN_COURS, TERMINE, TRANSFERE_SAMU, ABANDONNE |
+<!-- | `CallStatus` | Enum : EN_COURS, TERMINE, TRANSFERE_SAMU, ABANDONNE |
 | `ConversationTurn` | Un tour de conversation (role + message + timestamp) |
 | `CallSession` | Session d'appel complète (id, timestamps, conversation) |
 | `CallSentiment` | Enum : POSITIF, NEUTRE, NEGATIF, ANXIEUX |
 | `CallAnalysis` | Analyse post-appel (durée, sentiment, thèmes, qualité) |
-| `CallSummaryStructured` | Résumé structuré de l'appel pour dashboard |
+| `CallSummaryStructured` | Résumé structuré de l'appel pour dashboard | -->
 | `LeadQualification` | Qualif. lead (nouveau patient, potentiel suivi, motif) |
 | `DailyStats` | Stats agrégées par jour (volume, taux RDV, etc.) |
-| `CallLog` | Objet complet d'un appel (session + summary + analysis + lead) |
+<!-- | `CallLog` | Objet complet d'un appel (session + summary + analysis + lead) | -->
 
 ---
 
