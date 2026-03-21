@@ -54,16 +54,17 @@ TON TRAVAIL — dans cet ordre :
 1. ACCUEIL : salue brièvement, demande comment tu peux aider
 2. COLLECTE : récupère nom, âge, symptômes, depuis quand. UNE question à la fois. Si le patient donne plusieurs infos d'un coup, ne les redemande pas.
 3. ORIENTATION : selon les symptômes, oriente le patient :
-   - Symptômes graves → dis de rappeler le 15 (SAMU) et termine
+   - Symptômes graves → dis de rappeler le 15 (SAMU) et termine IMMÉDIATEMENT
    - Besoin de consultation → propose un RDV avec le médecin adapté
-   - Symptômes légers (rhume, gorge irritée) → conseille d'aller en pharmacie
+   - Symptômes légers (rhume, gorge irritée) → conseille pharmacie. Si le patient insiste pour un RDV, accepte.
 4. BOOKING (si RDV) : propose 2-3 créneaux, laisse le patient choisir, confirme
-5. CLÔTURE : remercie et dis au revoir
+5. CLÔTURE : dis "Merci pour votre appel, bonne journée !" puis IMMÉDIATEMENT envoie le JSON ci-dessous
 
-QUAND L'APPEL EST TERMINÉ (après clôture ou transfert SAMU), réponds UNIQUEMENT avec ce JSON :
-{{"APPEL_TERMINE": true, "nom": "...", "age": 0, "sexe": "non précisé", "symptomes": ["..."], "duree_symptomes": "...", "antecedents": [], "orientation": "generaliste|urgences|pharmacie|teleconsultation", "rdv_pris": false, "doctor_name": null, "slot_choisi": null, "motif": "...", "transfert_samu": false}}
+RÈGLE CRITIQUE — TERMINER L'APPEL :
+Dès que tu as dit au revoir au patient (après orientation pharmacie, après confirmation RDV, ou après transfert SAMU), ton message suivant DOIT être UNIQUEMENT le JSON ci-dessous. Pas de question supplémentaire. Pas de "Puis-je vous aider avec autre chose ?". L'appel est FINI.
 
-Remplis tous les champs avec ce que tu as appris pendant l'appel. orientation = le type de soin recommandé. Si RDV pris, remplis doctor_name et slot_choisi."""
+JSON DE FIN (à envoyer comme réponse complète, rien d'autre) :
+{{"APPEL_TERMINE": true, "nom": "...", "age": 0, "sexe": "non précisé", "symptomes": ["..."], "duree_symptomes": "...", "antecedents": [], "orientation": "generaliste|urgences|pharmacie|teleconsultation", "rdv_pris": false, "doctor_name": null, "slot_choisi": null, "motif": "...", "transfert_samu": false}}"""
 
 
 class VocalPipeline:
@@ -156,8 +157,17 @@ class VocalPipeline:
 
         return result
 
+    _GOODBYE_SIGNALS = ["bonne journée", "au revoir", "merci pour votre appel", "à bientôt", "prenez soin"]
+
+    def _is_goodbye(self, text: str) -> bool:
+        """Détecte si l'agent est en train de clôturer l'appel."""
+        lower = text.lower()
+        return any(signal in lower for signal in self._GOODBYE_SIGNALS)
+
     def _conversation_loop(self) -> dict | None:
         """L'agent gère la conversation — retourne le JSON de fin d'appel."""
+        goodbye_said = False
+
         for _ in range(MAX_TURNS):
             agent_text = self._stream_response()
 
@@ -167,6 +177,17 @@ class VocalPipeline:
 
             # L'agent parle
             self._say(agent_text)
+
+            # Détection au revoir — forcer le JSON au prochain tour
+            if self._is_goodbye(agent_text):
+                if goodbye_said:
+                    # Déjà dit au revoir une fois, on force la fin
+                    self.messages.append({"role": "user", "content": "Au revoir."})
+                    continue
+                goodbye_said = True
+                # Injecter un message pour forcer le JSON
+                self.messages.append({"role": "user", "content": "Merci, au revoir !"})
+                continue
 
             # Le patient répond
             patient_text = speech_to_text()
