@@ -1,6 +1,5 @@
 from OpenHosta import emulate
-def analyze_call(text: str) -> str:
-    """."""
+def translate(text: str) -> str:
+    """Traduit 'text' vers 'lang'."""
     return emulate()
-print(analyze_call("Hello", "fr"))  # "Bonjour"
-
+print(translate("Hello"))  # "Bonjour"
