@@ -95,3 +95,52 @@ class Clinic(BaseModel):
     adress : str
     doctors : list[Doctor]
     horaire : list[DoctorSchedule]
+
+
+class ConversationTurn(BaseModel):
+    role: str
+    message: str
+    timestamp: NaiveDatetime
+
+
+class CallSession(BaseModel):
+    conversation: list[ConversationTurn]
+
+
+class CallSentiment(str, Enum):
+    POSITIF = "positif"
+    NEUTRE = "neutre"
+    NEGATIF = "negatif"
+    ANXIEUX = "anxieux"
+
+
+class CallAnalysis(BaseModel):
+    duration: float  # Durée en secondes
+    total_turns: int  # Nombre de messages dans la conversation
+
+    @classmethod
+    def analyze_session(cls, session: CallSession) -> "CallAnalysis":
+        turns = session.conversation
+
+        if not turns:
+            return cls(duration=0.0, total_turns=0)
+
+        debut = turns[0].timestamp
+        fin = turns[-1].timestamp
+
+        return cls(duration=(fin - debut).total_seconds(), total_turns=len(turns))
+
+
+class CallSummaryStructured(BaseModel):
+    patient_problem: str = Field(
+        description="Résumé court du problème ou motif d'appel du patient"
+    )
+    agent_actions: list[str] = Field(
+        description="Liste des actions effectuées par l'agent (ex: orientation, prise de RDV, etc.)"
+    )
+    patient_overall_feeling: str = Field(
+        description="Ressenti global du patient concernant la consultation (ex: rassuré, frustré, confiant, confus)"
+    )
+    influencing_factors: list[str] = Field(
+        description="Éléments de la conversation ayant influencé ce ressenti (ex: clarté des réponses, empathie de l'agent, temps passé)"
+    )
