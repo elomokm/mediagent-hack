@@ -15,31 +15,25 @@ DEMO_SCENARIOS = [
     {
         "name": "URGENCE VITALE — Transfert SAMU",
         "responses": [
-            "Je m'appelle Marie Lefèvre",
-            "J'ai 65 ans",
-            "J'ai une douleur très forte dans la poitrine, j'arrive plus à respirer, ça fait très mal",
-            "Ça a commencé il y a 30 minutes, c'est de pire en pire",
+            "Je m'appelle Marie Lefèvre, j'ai 65 ans",
+            "J'ai une douleur très forte dans la poitrine depuis 30 minutes, j'arrive plus à respirer, c'est de pire en pire",
             "J'ai de l'hypertension et du diabète",
         ],
     },
     {
         "name": "RDV GÉNÉRALISTE — Booking complet",
         "responses": [
-            "Bonjour, je suis Jean Dupont",
-            "J'ai 35 ans",
-            "J'ai des petits maux de tête de temps en temps, et je me sens un peu fatigué",
-            "Depuis environ 5 jours",
+            "Bonjour, je suis Jean Dupont, j'ai 35 ans",
+            "J'ai des petits maux de tête de temps en temps et je me sens fatigué, depuis environ 5 jours",
             "Non, pas d'antécédents particuliers",
-            "Oui, c'est parfait pour le rendez-vous",
+            "Oui, c'est parfait",
         ],
     },
     {
         "name": "CONSEIL PHARMACIE — Orientation sans RDV",
         "responses": [
-            "Je suis Sophie Martin",
-            "28 ans",
-            "J'ai le nez qui coule un peu et la gorge légèrement irritée, rien de méchant",
-            "Depuis hier soir",
+            "Je suis Sophie Martin, 28 ans",
+            "J'ai le nez qui coule un peu et la gorge légèrement irritée depuis hier soir, rien de méchant",
             "Non rien du tout",
         ],
     },

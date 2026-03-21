@@ -40,9 +40,10 @@ def process_conversation_turn(conversation_text: str) -> ConversationStep:
     - sexe : "homme", "femme" ou "non précisé"
     - symptomes : liste de TOUS les symptômes médicaux. Ex: "maux de tête et nausées" → ["maux de tête", "nausées"]
     - duree_symptomes : depuis quand. Ex: "depuis 2 semaines" → "2 semaines"
-    - antecedents : antécédents médicaux mentionnés
+    - antecedents : liste des antécédents médicaux. TOUJOURS une liste. Ex: ["hypertension", "diabète"]. Si aucun antécédent → liste vide []
 
-    Valeurs par défaut si NON mentionné : nom="Inconnu", age=0, sexe="non précisé", symptomes=[], duree_symptomes="non précisé"
+    Valeurs par défaut si NON mentionné : nom="Inconnu", age=0, sexe="non précisé", symptomes=[], duree_symptomes="non précisé", antecedents=[]
+    IMPORTANT : antecedents doit TOUJOURS être une liste (jamais un string). Pas d'antécédent = []
 
     ÉTAPE 2 — Prochaine question :
     Poser UNE SEULE question pour obtenir la prochaine info manquante.

@@ -95,11 +95,12 @@ class MediAgentPipeline:
             step = process_conversation_turn(history_text)
 
             patient = step.patient_info
-            self._agent_says(step.next_question)
 
             if step.info_complete and has_sufficient_info(patient):
+                self._agent_says("Merci, j'ai toutes les informations nécessaires. Je vais analyser votre situation.")
                 break
 
+            self._agent_says(step.next_question)
             response = self._get_patient_input()
             self.history.append(f"Agent: {step.next_question}")
             self.history.append(f"Patient: {response}")
