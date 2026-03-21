@@ -67,8 +67,31 @@ class SurveyAnalysis(BaseModel):
     key_themes: list[str]
     improvement_suggestions: list[str]
 
-class specialitemedical(str, Enum):
-    MEDECIN = "medecin"
+class Medical_unit_type(str, Enum):
+    GENERALISTE = "generaliste"
+    PEDIATRIE = "pediatrie"
+    DERMATOLOGIE = "dermatologie"
+    CARDIOLOGIE = "cardiologie"
+    ORL = "orl"
+    GYNECOLOGIE = "gynecologie"
+    OPHTALMOLOGIE = "ophtalmologie"
 
 class Specialite(BaseModel):
-    medical : specialitemedical
+    medical_unit : Medical_unit_type
+
+class Doctor(BaseModel):
+    name : str
+    id : str
+    speciality : Medical_unit_type
+    place : str
+
+class DoctorSchedule(BaseModel):
+    name_doctor : str
+    available_slot : list[datetime]
+    occuped_slot : list[datetime]
+
+class Clinic(BaseModel):
+    nom : str
+    adress : str
+    doctors : list[Doctor]
+    horaire : list[DoctorSchedule]

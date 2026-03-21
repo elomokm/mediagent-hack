@@ -239,3 +239,80 @@ src/
 - De remplacement d'un professionnel de santé
 
 **Toujours rappeler : "En cas de doute, appelez le 15 (SAMU)"**
+
+---
+
+## 8. Décisions POC / Hackathon
+
+### Persistence — SQLite
+
+Fichier unique `data/mediagent.db`. Tables :
+- `calls` → CallLog sérialisé (JSON dans une colonne + colonnes indexées pour les stats)
+- `appointments` → RDV avec doctor_id, patient_name, slot
+- `schedules` → Planning par médecin par jour
+
+Avantage : données persistent entre les lancements, requêtes SQL directes pour les stats, crédible pour le jury.
+
+### Contexte agent — AgentContext centralisé
+
+```python
+class AgentContext(BaseModel):
+    clinic: Clinic                              # infos clinique (nom, adresse, médecins)
+    current_session: CallSession                # session d'appel en cours
+    conversation_history: list[ConversationTurn] # historique conversation
+    patient_partial: PatientInput | None        # infos patient en cours de collecte
+```
+
+Chaque fonction `emulate()` reçoit `AgentContext` en argument. La docstring de la fonction utilise ce contexte pour donner au LLM toutes les infos nécessaires (nom de la clinique, médecins dispos, historique conversation, etc.).
+
+### Génération dynamique de la clinique
+
+Au lancement, `generate_clinic()` crée :
+- 1 clinique "MediSanté" (nom, adresse, horaires)
+- 5 médecins (généraliste x2, cardiologue, dermatologue, pédiatre)
+- Plannings sur 7 jours : créneaux 30min, 9h-12h / 14h-18h, ~30% déjà réservés
+
+### Modes d'exécution
+
+```bash
+python main.py              # Mode interactif (conversation texte)
+python main.py --demo       # 3 scénarios automatiques
+python main.py --vocal      # Mode vocal (STT Whisper + TTS OpenAI)
+```
+
+### 3 scénarios de démo
+
+| # | Profil patient | Chemin attendu | Ce que ça montre |
+|---|---|---|---|
+| 1 | 65 ans, douleur thoracique intense | Triage > 0.8 → SAMU (15) | Détection urgence vitale |
+| 2 | 35 ans, maux de tête 2 semaines | Généraliste → matching → booking | Flux complet avec RDV |
+| 3 | 28 ans, rhume léger 2 jours | Pharmacie → conseil | Orientation sans RDV |
+
+### Output terminal attendu
+
+Après chaque appel :
+```
+═══════════════ ANALYTICS APPEL #a3f2 ═══════════════
+Durée          : 45s
+Orientation    : GENERALISTE
+RDV            : Dr. Martin — 22/03 à 10h30
+Sentiment      : Positif
+Thèmes         : [maux de tête, stress, suivi]
+Qualité        : 0.87/1.0
+Lead           : Nouveau patient, potentiel suivi
+══════════════════════════════════════════════════════
+```
+
+Fin de session :
+```
+═══════════════ STATS JOURNALIÈRES ══════════════════
+Appels         : 3
+SAMU           : 1 (33%)
+RDV pris       : 1 (33%)
+Pharmacie      : 1 (33%)
+Durée moyenne  : 38s
+══════════════════════════════════════════════════════
+```
+
+
+
