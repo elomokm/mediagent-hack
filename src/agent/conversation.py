@@ -16,18 +16,22 @@ def generate_greeting(clinic_name: str, clinic_address: str) -> str:
     return emulate()
 
 
-def extract_patient_info(conversation_history: list[str]) -> PatientInput:
-    """Extrait les informations structurées du patient à partir de la conversation.
+def extract_patient_info(conversation_text: str) -> PatientInput:
+    """Extrait les informations structurées du patient à partir du texte de la conversation.
 
-    Analyse l'historique de conversation et remplis les champs du PatientInput :
-    - nom : nom du patient (si mentionné)
-    - age : âge du patient (si mentionné)
-    - sexe : sexe du patient (si mentionné)
-    - symptomes : liste des symptômes décrits
-    - duree_symptomes : depuis quand les symptômes sont présents
+    Le texte contient des lignes au format :
+    Agent: <message de l'agent>
+    Patient: <réponse du patient>
+
+    Extrais TOUTES les informations mentionnées par le patient :
+    - nom : le nom complet du patient. Si le patient dit "Je suis Elom" ou "Elom OKOUMASSOUN", extrais ce nom.
+    - age : l'âge en nombre entier. Si le patient dit "j'ai 35 ans", extrais 35.
+    - sexe : "homme", "femme" ou "non précisé"
+    - symptomes : liste de TOUS les symptômes médicaux décrits par le patient
+    - duree_symptomes : depuis quand (ex: "2 semaines", "3 jours")
     - antecedents : antécédents médicaux mentionnés
 
-    Si une information n'est pas mentionnée, utilise une valeur par défaut raisonnable :
+    Valeurs par défaut si l'information n'est PAS dans la conversation :
     - nom: "Inconnu", age: 0, sexe: "non précisé", symptomes: [], duree_symptomes: "non précisé"
     """
     return emulate()

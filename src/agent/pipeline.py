@@ -78,7 +78,8 @@ class MediAgentPipeline:
             self.history.append(f"Agent: {question}")
             self.history.append(f"Patient: {response}")
 
-            patient = extract_patient_info(self.history)
+            history_text = "\n".join(self.history)
+            patient = extract_patient_info(history_text)
 
             if has_sufficient_info(patient):
                 break
