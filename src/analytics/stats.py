@@ -1,8 +1,18 @@
 """Statistiques agrégées pour le dashboard clinique — logique pure."""
 
 from collections import Counter
+from datetime import datetime
 
 from src.models.schemas import DailyStats
+from src.tools.data_store import get_calls_by_date, get_all_calls
+
+
+def get_daily_kpis(date: str | None = None) -> DailyStats:
+    """Récupère les KPIs d'une journée depuis la BDD."""
+    if date is None:
+        date = datetime.now().strftime("%Y-%m-%d")
+    calls = get_calls_by_date(date)
+    return compute_daily_stats(calls, date)
 
 
 def compute_daily_stats(calls: list[dict], date: str) -> DailyStats:

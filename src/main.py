@@ -133,6 +133,29 @@ def run_vocal():
     print(f"\n[STATUS] Appel terminé — statut : {result['status']}")
 
 
+def run_stats():
+    """Affiche les KPIs du jour depuis la BDD."""
+    from src.analytics.stats import get_daily_kpis, format_stats_terminal
+
+    date = None
+    for i, arg in enumerate(sys.argv):
+        if arg == "--stats" and i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
+            date = sys.argv[i + 1]
+
+    stats = get_daily_kpis(date)
+    print(format_stats_terminal(stats))
+
+    # Détail par appel
+    from src.tools.data_store import get_calls_by_date
+    calls = get_calls_by_date(date or datetime.now().strftime("%Y-%m-%d"))
+    if calls:
+        print(f"\n  Détail des {len(calls)} appels :")
+        for c in calls:
+            patient = c.get("patient", {})
+            nom = patient.get("nom", "?") if isinstance(patient, dict) else "?"
+            print(f"    #{c['id']} | {nom} | {c.get('care_type', '?')} | {c.get('duration_sec', 0)}s | {c.get('status', '?')}")
+
+
 def main():
     init_db()
 
@@ -140,6 +163,8 @@ def main():
         run_demo()
     elif "--vocal" in sys.argv:
         run_vocal()
+    elif "--stats" in sys.argv:
+        run_stats()
     else:
         run_interactive()
 
