@@ -145,16 +145,16 @@ class CallAnalysis(BaseModel):
 
 
 class CallSummaryStructured(BaseModel):
-    call_id: str
-    patient_nom: str
-    motif_appel: str
-    symptomes_reportes: list[str]
-    urgency_score: float
-    urgency_confidence: float
-    orientation: CareType
-    rdv_pris: bool
-    doctor_name: str | None = None
-    resume_libre: str
+    call_id: str = Field(description="Identifiant unique de l'appel")
+    patient_nom: str = Field(description="Nom complet ou partiel du patient")
+    motif_appel: str = Field(description="Raison principale de l'appel")
+    symptomes_reportes: list[str] = Field(description="Liste des symptômes médicaux formulés par le patient")
+    urgency_score: float = Field(ge=0.0, le=1.0, description="Score d'urgence estimé")
+    urgency_confidence: float = Field(ge=0.0, le=1.0, description="Niveau de confiance dans l'estimation de l'urgence")
+    orientation: CareType = Field(description="Type de prise en charge recommandé")
+    rdv_pris: bool = Field(description="Indique si un rendez-vous a été planifié")
+    doctor_name: str | None = Field(default=None, description="Nom du médecin si un RDV a été pris")
+    resume_libre: str = Field(description="Résumé rédigé du problème, des actions accomplies et du ressenti observé")
 
 
 class LeadQualification(BaseModel):
