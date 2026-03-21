@@ -1,0 +1,10 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+.git/
+data/mediagent.db
+CLAUDE.md
+SUIVI.md
+.pytest_cache/
+htmlcov/
