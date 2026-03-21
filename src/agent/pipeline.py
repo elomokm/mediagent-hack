@@ -12,6 +12,7 @@ from src.agent.triage import evaluate_urgency, is_life_threatening
 from src.agent.care_router import qualify_care_type
 from src.agent.doctor_matcher import match_doctor
 from src.models.schemas import CareType, PatientInput
+from src.tools.scheduling import find_available_slots, find_alternative_doctor, book_slot
 
 MAX_CONVERSATION_TURNS = 10
 
@@ -101,22 +102,54 @@ class MediAgentPipeline:
 
     def _book(self, patient, care) -> dict | None:
         doctor_id = match_doctor(patient, care, self.doctors)
-        matched = next((d for d in self.doctors if d["id"] == doctor_id), None)
 
-        if matched:
-            doctor_name = f"Dr. {matched['prenom']} {matched['nom']}"
+        # Chercher des créneaux pour ce médecin
+        slots = find_available_slots(doctor_id, self.doctors)
+
+        # Si pas de créneaux, chercher un alternative avec la même spécialité
+        if not slots:
+            alt_id = find_alternative_doctor(doctor_id, self.doctors)
+            if alt_id:
+                doctor_id = alt_id
+                slots = find_available_slots(doctor_id, self.doctors)
+
+        if not slots:
             self._agent_says(
-                f"Je vous oriente vers {doctor_name}. "
-                "Un créneau sera réservé pour vous prochainement."
+                "Je n'ai pas trouvé de créneau disponible pour le moment. "
+                "Nous vous recontacterons dès qu'un créneau se libère."
             )
-            # TODO: remplacer par scheduling.find_available_slots + book_slot
-            return {"doctor_id": doctor_id, "doctor_name": doctor_name, "booked": False}
+            return None
 
+        matched = next((d for d in self.doctors if d["id"] == doctor_id), None)
+        doctor_name = f"Dr. {matched['prenom']} {matched['nom']}" if matched else "un médecin"
+
+        # Proposer le premier créneau disponible
+        slot = slots[0]
+        date_str = slot.datetime_start.strftime("%d/%m à %Hh%M")
         self._agent_says(
-            "Je n'ai pas trouvé de médecin disponible pour le moment. "
-            "Nous vous recontacterons dès qu'un créneau se libère."
+            f"Je vous propose un rendez-vous avec {doctor_name}, "
+            f"le {date_str} à {slot.location}. Est-ce que cela vous convient ?"
         )
-        return None
+
+        response = input("\n> ")
+        self.history.append(f"Agent: Proposition RDV {doctor_name} le {date_str}")
+        self.history.append(f"Patient: {response}")
+
+        # Réserver le créneau
+        appointment = book_slot(slot, patient.nom)
+        self._agent_says(
+            f"Votre rendez-vous est confirmé. "
+            f"Numéro de confirmation : {appointment.confirmation_id}. "
+            f"Vous recevrez un SMS de confirmation."
+        )
+
+        return {
+            "doctor_id": doctor_id,
+            "doctor_name": doctor_name,
+            "slot": date_str,
+            "confirmation_id": appointment.confirmation_id,
+            "booked": True,
+        }
 
     def _finalize(self, patient, urgency, care, appointment_info) -> dict:
         self._agent_says(
