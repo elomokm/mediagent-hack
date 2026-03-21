@@ -176,3 +176,8 @@ class DailyStats(BaseModel):
         object.__setattr__(self, "taux_abandon", cal_taux_abandon(self))
         return self
 
+class CallLog(BaseModel):
+    session: CallSession
+    summary: CallSummaryStructured
+    analysis: CallAnalysis
+    lead: LeadQualification
