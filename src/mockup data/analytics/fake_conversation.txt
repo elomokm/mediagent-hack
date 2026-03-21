@@ -1,0 +1,20 @@
+Agent : Bonjour, je suis MediAgent, l'assistant d'accueil médical. Comment puis-je vous aider aujourd'hui ?
+Patient : Bonjour, je vous appelle parce que j'ai des maux de tête très persistants et ça commence vraiment à m'inquiéter.
+Agent : Je suis désolé d'entendre cela. Je vais vous poser quelques questions pour mieux comprendre la situation et vous orienter. Pour commencer, pourriez-vous m'indiquer votre âge ?
+Patient : J'ai 35 ans.
+Agent : Merci. Depuis combien de temps avez-vous ces maux de tête ?
+Patient : Ça fait exactement deux semaines que ça a commencé.
+Agent : D'accord. Pouvez-vous me décrire la douleur ? Est-ce que ça tape, est-ce une douleur continue, et est-ce localisé à un endroit précis ?
+Patient : C'est comme un étau qui me serre la tête. Ce n'est pas d'un seul côté, c'est vraiment partout.
+Agent : Je vois. Avez-vous remarqué d'autres symptômes associés ? Par exemple, de la fièvre, des problèmes de vue, des nausées, ou une sensibilité à la lumière ?
+Patient : Pas de fièvre. Par contre, oui, j'ai parfois un peu mal aux yeux quand il y a de la lumière forte, mais pas de nausées.
+Agent : C'est noté. Avez-vous des antécédents médicaux particuliers (comme des migraines connues ou de l'hypertension), ou prenez-vous actuellement un traitement ?
+Patient : Non, je suis plutôt en bonne santé d'habitude. J'ai pris du paracétamol ces derniers jours, mais ça ne soulage la douleur que temporairement.
+Agent : Merci pour ces précisions. Vos symptômes ne semblent pas indiquer d'urgence vitale dans l'immédiat, mais comme les maux de tête persistent depuis 14 jours malgré la prise d'antalgiques, une consultation médicale est recommandée pour faire un point complet.
+Agent : Souhaitez-vous que je regarde les prochaines disponibilités de nos médecins généralistes ?
+Patient : Oui, s'il vous plaît, j'aimerais bien voir un médecin le plus vite possible.
+Agent : J'ai un créneau disponible en cabinet avec le Dr Laurent demain à 10h15. Est-ce que cet horaire vous conviendrait ?
+Patient : Oui, c'est parfait.
+Agent : Très bien, je valide le rendez-vous. Vous recevrez un SMS de confirmation d'ici quelques instants. En attendant la consultation, si la douleur devenait subitement insupportable ou si d'autres symptômes comme une faiblesse apparaissaient, n'hésitez pas à appeler le 15.
+Patient : C'est compris, merci beaucoup.
+Agent : Je vous en prie. Je vous souhaite une bonne journée et un prompt rétablissement.
