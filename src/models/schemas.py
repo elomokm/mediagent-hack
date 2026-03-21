@@ -3,7 +3,7 @@
 from datetime import datetime, date
 from enum import Enum
 
-from pydantic import BaseModel, Field, NaiveDatetime, model_validator
+from pydantic import BaseModel, Field, NaiveDatetime, model_validator, ConfigDict
 
 class PatientInput(BaseModel):
     nom: str
@@ -146,23 +146,11 @@ class CallSummaryStructured(BaseModel):
     resume_libre: str
 
 class LeadQualification(BaseModel):
-    new_patient = bool
-    potential_follow = bool
-    motive = str
-
-class DailyStats(BaseModel):
-    day : date
-    nb_calls: int = Field(ge=0)
-    nb_abandons: int = Field(ge=0)
-    nb_rdv: int = Field(ge=0)
-    taux_rdv: float = Field(ge=0)
-
+    new_patient : bool
+    potential_follow : bool
+    motive : str
 
 # | `DailyStats` | Stats agrégées par jour (volume, taux RDV, etc.) |
-
-
-from datetime import date
-from pydantic import BaseModel, Field, computed_field, ConfigDict
 
 def cal_ratio(num: int, den: int) -> float:  # ← externe, pas besoin de self
     return num / den if den else 0.0
@@ -187,29 +175,4 @@ class DailyStats(BaseModel):
         object.__setattr__(self, "taux_rdv", cal_taux_rdv(self))
         object.__setattr__(self, "taux_abandon", cal_taux_abandon(self))
         return self
-    # @model_validator(mode="after")
-    # def cal_ratio(num: int, den: int) -> float:
-    #     return num / den if den else 0.0
-    # @model_validator(mode="after")
-    # def cal_taux_rdv(self) -> float:
-    #     self.taux_rdv = self.cal_ratio(self.nb_rdv, self.nb_calls)
-    # @model_validator(mode="after")
-    # def cal_taux_abandon(self) -> float:
-    #     self.taux_abandon = self.cal_ratio(self.nb_abandons, self.nb_calls)
 
-#     from datetime import date
-# from pydantic import BaseModel, Field, computed_field, ConfigDict
-
-# float function_haha(int intput1, int input2, int input3)
-#     return blablab;
-
-# class DailyStats(BaseModel):
-#     model_config = ConfigDict(frozen=True)
-
-#     day: date
-#     nb_calls: int = Field(ge=0)
-#     nb_rdv: int = Field(ge=0)
-#     nb_abandons: int = Field(ge=0)
-#     nb_transferts_samu: int = Field(ge=0)
-
-#     float var = function_haha(input1, input2, input3)
