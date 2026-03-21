@@ -95,6 +95,11 @@ class Clinic(BaseModel):
     doctors : list[Doctor]
     horaire : list[DoctorSchedule]
 
+class CallStatus(str, Enum):
+    EN_COURS = "en cours"
+    TERMINE = "terminé"
+    TRANSFERE_SAMU = "transfère samu"
+    ABANDONNE = "abandonné"
 
 class ConversationTurn(BaseModel):
     role: str
@@ -105,13 +110,11 @@ class ConversationTurn(BaseModel):
 class CallSession(BaseModel):
     conversation: list[ConversationTurn]
 
-
 class CallSentiment(str, Enum):
     POSITIF = "positif"
     NEUTRE = "neutre"
     NEGATIF = "negatif"
     ANXIEUX = "anxieux"
-
 
 class CallAnalysis(BaseModel):
     duration: float  # Durée en secondes
