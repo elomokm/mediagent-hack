@@ -95,50 +95,59 @@ class Clinic(BaseModel):
     doctors : list[Doctor]
     horaire : list[DoctorSchedule]
 
+# --- Session d'appel ---
+
 class CallStatus(str, Enum):
-    EN_COURS = "en cours"
-    TERMINE = "terminé"
-    TRANSFERE_SAMU = "transfère samu"
-    ABANDONNE = "abandonné"
+    EN_COURS = "en_cours"
+    TERMINE = "termine"
+    TRANSFERE_SAMU = "transfere_samu"
+    ABANDONNE = "abandonne"
 
 class ConversationTurn(BaseModel):
-    role: str
+    role: str = Field(description="'agent' ou 'patient'")
     message: str
-    timestamp: NaiveDatetime
-
+    timestamp: datetime
 
 class CallSession(BaseModel):
-    conversation: list[ConversationTurn]
-
+    call_id: str
+    clinic_id: str
+    timestamp_start: datetime
+    timestamp_end: datetime | None = None
+    status: CallStatus = CallStatus.EN_COURS
+    conversation: list[ConversationTurn] =           Field(default_factory=list)
+    patient: PatientInput | None = None
+# --- Analytics ---
 class CallSentiment(str, Enum):
     POSITIF = "positif"
     NEUTRE = "neutre"
     NEGATIF = "negatif"
     ANXIEUX = "anxieux"
 
+
 class CallAnalysis(BaseModel):
-    duration: float  # Durée en secondes
-    total_turns: int  # Nombre de messages dans la conversation
-
-    @classmethod
-    def analyze_session(cls, session: CallSession) -> "CallAnalysis":
-        turns = session.conversation
-
-        if not turns:
-            return cls(duration=0.0, total_turns=0)
-        debut = turns[0].timestamp
-        fin = turns[-1].timestamp
-        return cls(duration=(fin - debut).total_seconds(), total_turns=len(turns))
+    call_id: str
+    duree_secondes: float
+    sentiment_global: CallSentiment
+    themes_principaux: list[str]
+    qualite_interaction: float = Field(ge=0.0, le=1.0)
+    notes_amelioration: list[str] = Field(default_factory=list)
 
 
 class CallSummaryStructured(BaseModel):
-    patient_problem: str
-    agent_actions: list[str]
-    patient_overall_feeling: str
-    influencing_factors: list[str]
+    call_id: str
+    patient_nom: str
+    motif_appel: str
+    symptomes_reportes: list[str]
+    urgency_score: float
+    urgency_confidence: float
+    orientation: CareType
+    rdv_pris: bool
+    doctor_name: str | None = None
+    resume_libre: str
 
-class LeadQualification(BaseModel):
+
+# class LeadQualification(BaseModel):
     
 
 
-| `LeadQualification` | Qualif. lead (nouveau patient, potentiel suivi, motif) |
+# | `LeadQualification` | Qualif. lead (nouveau patient, potentiel suivi, motif) |
