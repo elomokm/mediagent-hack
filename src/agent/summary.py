@@ -1,7 +1,7 @@
 from OpenHosta import emulate
 from pydantic import BaseModel, Field
 
-from models.schemas import (
+from src.models.schemas import (
     CallSummaryGenerated,
     CallSummaryStructured,
     CareRecommendation,

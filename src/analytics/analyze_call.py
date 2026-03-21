@@ -1,7 +1,7 @@
 from OpenHosta import emulate
 from pydantic import BaseModel, Field
 
-from models.schemas import CallAnalysis, CallSentiment
+from src.models.schemas import CallAnalysis, CallSentiment
 
 
 # --- Internal Classes for Granular Inference ---

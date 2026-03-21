@@ -1,4 +1,6 @@
 CLAUDE.md
+SUIVI.md
+data/mediagent.db
 .venv/
 .env
 __pycache__/

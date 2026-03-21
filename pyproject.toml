@@ -10,6 +10,9 @@ dependencies = [
     "python-dotenv",
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+
 [dependency-groups]
 dev = [
     "pytest",

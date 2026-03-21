@@ -1,12 +1,10 @@
-import os
-import sqlite3
+"""Génération dynamique des données mock de la clinique via emulate()."""
+
 import json
+import os
+
 from dotenv import load_dotenv
 from OpenHosta import emulate
-
-import sys
-# Ajoute la racine du projet ("mediagent-hack") au PATH
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from src.tools.data_store import get_connection, init_db
 

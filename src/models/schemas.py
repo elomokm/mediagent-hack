@@ -143,9 +143,6 @@ class CallAnalysis(CallAnalysisGenerated):
     duree_secondes: float
 
 
-# --------- Si l'agent n'a pas de mémoire ----------
-
-
 class CallSummaryGenerated(BaseModel):
     """Informations extraites et résumées par l'IA à partir de la conversation."""
 
@@ -173,26 +170,64 @@ class CallSummaryStructured(CallSummaryGenerated):
     call_id: str
 
 
-# -------------- Si l'agent a une mémoire --------------
+# --- Clinique & Médecins ---
 
 
-# class CallSummaryStructured(BaseModel):
-#     """Modèle complet incluant les identifiants système."""
+class Specialite(str, Enum):
+    GENERALISTE = "generaliste"
+    PEDIATRIE = "pediatrie"
+    DERMATOLOGIE = "dermatologie"
+    CARDIOLOGIE = "cardiologie"
+    ORL = "orl"
+    GYNECOLOGIE = "gynecologie"
+    OPHTALMOLOGIE = "ophtalmologie"
 
-#     call_id: str
-#     urgency_confidence: float = Field(
-#         ge=0.0, le=1.0, description="Confiance dans l'évaluation d'urgence"
-#     )
-#     orientation: CareType = Field(
-#         description="Type d'orientation recommandé (doit correspondre exactement aux valeurs de CareType : urgences, generaliste, teleconsultation, pharmacie)"
-#     )
-#     rdv_pris: bool = Field(description="Indique si un rendez-vous a été planifié")
-#     doctor_name: str | None = Field(
-#         default=None, description="Nom du médecin si un RDV est pris"
-#     )
-#     patient_nom: str = Field(description="Nom du patient (ou 'Inconnu')")
-#     motif_appel: str = Field(description="Raison principale de l'appel")
-#     symptomes_reportes: list[str] = Field(description="Liste des symptômes cités")
-#     urgency_score: float = Field(
-#         ge=0.0, le=1.0, description="Niveau d'urgence évalué (0.0 à 1.0)"
-#     )
+
+class Doctor(BaseModel):
+    id: str
+    nom: str
+    prenom: str
+    specialites: list[Specialite]
+    lieu: str
+    duree_consultation_min: int = 30
+
+
+class Clinic(BaseModel):
+    id: str
+    nom: str
+    adresse: str
+    telephone: str
+    horaires_ouverture: str
+    doctors: list[Doctor] = Field(default_factory=list)
+
+
+# --- Lead & Stats ---
+
+
+class LeadQualification(BaseModel):
+    call_id: str
+    patient_nom: str
+    est_nouveau_patient: bool
+    motif_contact: str
+    potentiel_suivi: bool
+    source_decouverte: str | None = None
+
+
+class DailyStats(BaseModel):
+    date: str
+    total_appels: int
+    appels_par_orientation: dict[str, int]
+    duree_moyenne_secondes: float
+    taux_rdv_pris: float = Field(ge=0.0, le=1.0)
+    urgences_detectees: int
+    transferts_samu: int
+    sentiment_distribution: dict[str, int]
+    top_motifs: list[str]
+
+
+class CallLog(BaseModel):
+    session: CallSession
+    summary: CallSummaryStructured | None = None
+    analysis: CallAnalysis | None = None
+    lead: LeadQualification | None = None
+    clinical_summary: ClinicalSummary | None = None
