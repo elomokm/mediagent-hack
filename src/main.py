@@ -27,10 +27,10 @@ DEMO_SCENARIOS = [
         "responses": [
             "Bonjour, je suis Jean Dupont",
             "J'ai 35 ans",
-            "J'ai des maux de tête très forts depuis 2 semaines, et parfois des vertiges",
-            "Depuis 2 semaines exactement",
+            "J'ai des petits maux de tête de temps en temps, et je me sens un peu fatigué",
+            "Depuis environ 5 jours",
             "Non, pas d'antécédents particuliers",
-            "Oui, c'est parfait",
+            "Oui, c'est parfait pour le rendez-vous",
         ],
     },
     {
@@ -38,9 +38,9 @@ DEMO_SCENARIOS = [
         "responses": [
             "Je suis Sophie Martin",
             "28 ans",
-            "J'ai un petit rhume, le nez qui coule et un peu mal à la gorge",
-            "Depuis 2 jours",
-            "Non rien de particulier",
+            "J'ai le nez qui coule un peu et la gorge légèrement irritée, rien de méchant",
+            "Depuis hier soir",
+            "Non rien du tout",
         ],
     },
 ]
