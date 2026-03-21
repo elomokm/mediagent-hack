@@ -1,10 +1,10 @@
 import os
 import sys
 
-# Ajout du dossier "src" au chemin pour permettre l'import du module "analytics"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from analytics.analyze_call import analyze_call
+
 
 # def analyze_call(text: str, call_id: str, duree: float) -> CallAnalysis:
 def test_analyze_call():
@@ -17,7 +17,7 @@ def test_analyze_call():
     file_path = os.path.join(
         base_dir, "mockup_data", "analytics", "fake_conversation.txt"
     )
-
+    print(file_path)
     # 1. Ouvrir et lire le fichier
     with open(file_path, "r", encoding="utf-8") as f:
         conversation_text = f.read()
