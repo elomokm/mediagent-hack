@@ -19,13 +19,26 @@ MAX_CONVERSATION_TURNS = 10
 class MediAgentPipeline:
     """Orchestre le flux complet d'un appel patient pour une clinique."""
 
-    def __init__(self, clinic_name: str, clinic_address: str, doctors: list[dict]):
+    def __init__(self, clinic_name: str, clinic_address: str, doctors: list[dict],
+                 patient_responses: list[str] | None = None):
         self.clinic_name = clinic_name
         self.clinic_address = clinic_address
         self.doctors = doctors
         self.history: list[str] = []
         self.timestamp_start: datetime | None = None
         self.timestamp_end: datetime | None = None
+        # Mode démo : réponses pré-remplies
+        self._responses = list(patient_responses) if patient_responses else None
+        self._response_idx = 0
+
+    def _get_patient_input(self) -> str:
+        """Récupère la réponse du patient — input() ou réponses pré-remplies."""
+        if self._responses and self._response_idx < len(self._responses):
+            response = self._responses[self._response_idx]
+            self._response_idx += 1
+            print(f"\n> {response}")  # afficher comme si le patient tapait
+            return response
+        return input("\n> ")
 
     def handle_call(self) -> dict:
         """Exécute le flux complet d'un appel. Retourne un résumé de l'appel."""
@@ -81,7 +94,7 @@ class MediAgentPipeline:
             if step.info_complete and has_sufficient_info(patient):
                 break
 
-            response = input("\n> ")
+            response = self._get_patient_input()
             self.history.append(f"Agent: {step.next_question}")
             self.history.append(f"Patient: {response}")
 
@@ -103,10 +116,8 @@ class MediAgentPipeline:
     def _book(self, patient, care) -> dict | None:
         doctor_id = match_doctor(patient, care, self.doctors)
 
-        # Chercher des créneaux pour ce médecin
         slots = find_available_slots(doctor_id, self.doctors)
 
-        # Si pas de créneaux, chercher un alternative avec la même spécialité
         if not slots:
             alt_id = find_alternative_doctor(doctor_id, self.doctors)
             if alt_id:
@@ -123,7 +134,6 @@ class MediAgentPipeline:
         matched = next((d for d in self.doctors if d["id"] == doctor_id), None)
         doctor_name = f"Dr. {matched['prenom']} {matched['nom']}" if matched else "un médecin"
 
-        # Proposer le premier créneau disponible
         slot = slots[0]
         date_str = slot.datetime_start.strftime("%d/%m à %Hh%M")
         self._agent_says(
@@ -131,11 +141,10 @@ class MediAgentPipeline:
             f"le {date_str} à {slot.location}. Est-ce que cela vous convient ?"
         )
 
-        response = input("\n> ")
+        response = self._get_patient_input()
         self.history.append(f"Agent: Proposition RDV {doctor_name} le {date_str}")
         self.history.append(f"Patient: {response}")
 
-        # Réserver le créneau
         appointment = book_slot(slot, patient.nom)
         self._agent_says(
             f"Votre rendez-vous est confirmé. "
@@ -166,16 +175,20 @@ class MediAgentPipeline:
             "care": care.model_dump(),
             "appointment": appointment_info,
             "duration_seconds": duration,
+            "timestamp_start": self.timestamp_start,
         }
 
-        print("\n" + "=" * 50)
-        print(f"  RÉCAP APPEL")
+        print("\n" + "=" * 55)
+        print("  RÉCAP APPEL")
+        print("=" * 55)
         print(f"  Durée       : {duration:.0f}s")
         print(f"  Orientation : {care.care_type.value}")
         print(f"  Urgence     : {urgency.score}/1.0 (confiance {urgency.confidence})")
         if appointment_info:
             print(f"  Médecin     : {appointment_info['doctor_name']}")
-        print("=" * 50)
+            print(f"  RDV         : {appointment_info['slot']}")
+            print(f"  Confirmation: {appointment_info['confirmation_id']}")
+        print("=" * 55)
 
         return result
 
