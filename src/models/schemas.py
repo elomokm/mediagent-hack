@@ -1,9 +1,9 @@
 """Schémas Pydantic — source de vérité pour tous les types MediAgent."""
 
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum
 
-from pydantic import BaseModel, Field, NaiveDatetime
+from pydantic import BaseModel, Field, NaiveDatetime, model_validator
 
 class PatientInput(BaseModel):
     nom: str
@@ -151,18 +151,65 @@ class LeadQualification(BaseModel):
     motive = str
 
 class DailyStats(BaseModel):
-    nb_calls: int = Field(ge=0, le=100000)
-    taux_rdv: int = Field(ge=0.0, le=1.0)
-    patient_name = str
+    day : date
+    nb_calls: int = Field(ge=0)
+    nb_abandons: int = Field(ge=0)
+    nb_rdv: int = Field(ge=0)
+    taux_rdv: float = Field(ge=0)
 
 
 # | `DailyStats` | Stats agrégées par jour (volume, taux RDV, etc.) |
-# | `DailyStats` | Stats agrégées par jour (volume, taux RDV, etc.) |
-# 
 
 
-# | `LeadQualification` | Qualif. lead (nouveau patient, potentiel suivi, motif) |
+from datetime import date
+from pydantic import BaseModel, Field, computed_field, ConfigDict
 
+def cal_ratio(num: int, den: int) -> float:  # ← externe, pas besoin de self
+    return num / den if den else 0.0
+def cal_taux_rdv(self) -> float:
+    return cal_ratio(self.nb_rdv, self.nb_calls)
+def cal_taux_abandon(self) -> float:
+    return cal_ratio(self.nb_abandons, self.nb_calls)
 
+class DailyStats(BaseModel):
+    model_config = ConfigDict(frozen=True)
 
-# | `LeadQualification` | Qualif. lead (nouveau patient, potentiel suivi, motif) |
+    day: date
+    nb_calls: int = Field(ge=0)
+    nb_rdv: int = Field(ge=0)
+    nb_abandons: int = Field(ge=0)
+    nb_transferts_samu: int = Field(ge=0)
+    taux_rdv: float = 0.0
+    taux_abandon: float = 0.0
+
+    @model_validator(mode="after")
+    def compute(self):
+        object.__setattr__(self, "taux_rdv", cal_taux_rdv(self))
+        object.__setattr__(self, "taux_abandon", cal_taux_abandon(self))
+        return self
+    # @model_validator(mode="after")
+    # def cal_ratio(num: int, den: int) -> float:
+    #     return num / den if den else 0.0
+    # @model_validator(mode="after")
+    # def cal_taux_rdv(self) -> float:
+    #     self.taux_rdv = self.cal_ratio(self.nb_rdv, self.nb_calls)
+    # @model_validator(mode="after")
+    # def cal_taux_abandon(self) -> float:
+    #     self.taux_abandon = self.cal_ratio(self.nb_abandons, self.nb_calls)
+
+#     from datetime import date
+# from pydantic import BaseModel, Field, computed_field, ConfigDict
+
+# float function_haha(int intput1, int input2, int input3)
+#     return blablab;
+
+# class DailyStats(BaseModel):
+#     model_config = ConfigDict(frozen=True)
+
+#     day: date
+#     nb_calls: int = Field(ge=0)
+#     nb_rdv: int = Field(ge=0)
+#     nb_abandons: int = Field(ge=0)
+#     nb_transferts_samu: int = Field(ge=0)
+
+#     float var = function_haha(input1, input2, input3)
