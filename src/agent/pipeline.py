@@ -20,23 +20,29 @@ class MediAgentPipeline:
     """Orchestre le flux complet d'un appel patient pour une clinique."""
 
     def __init__(self, clinic_name: str, clinic_address: str, doctors: list[dict],
-                 patient_responses: list[str] | None = None):
+                 patient_responses: list[str] | None = None, vocal: bool = False):
         self.clinic_name = clinic_name
         self.clinic_address = clinic_address
         self.doctors = doctors
         self.history: list[str] = []
         self.timestamp_start: datetime | None = None
         self.timestamp_end: datetime | None = None
+        self.vocal = vocal
         # Mode démo : réponses pré-remplies
         self._responses = list(patient_responses) if patient_responses else None
         self._response_idx = 0
 
     def _get_patient_input(self) -> str:
-        """Récupère la réponse du patient — input() ou réponses pré-remplies."""
+        """Récupère la réponse du patient — input(), vocal ou réponses pré-remplies."""
         if self._responses and self._response_idx < len(self._responses):
             response = self._responses[self._response_idx]
             self._response_idx += 1
-            print(f"\n> {response}")  # afficher comme si le patient tapait
+            print(f"\n> {response}")
+            return response
+        if self.vocal:
+            from src.tools.voice import speech_to_text
+            response = speech_to_text()
+            print(f"\n> {response}")
             return response
         return input("\n> ")
 
@@ -194,3 +200,6 @@ class MediAgentPipeline:
 
     def _agent_says(self, message: str):
         print(f"\n🏥 Agent: {message}")
+        if self.vocal:
+            from src.tools.voice import text_to_speech
+            text_to_speech(message)

@@ -8,6 +8,9 @@ dependencies = [
     "pydantic>=2.0",
     "openai",
     "python-dotenv",
+    "sounddevice>=0.5.5",
+    "soundfile>=0.13.1",
+    "numpy>=2.4.3",
 ]
 
 [tool.setuptools.packages.find]

@@ -46,20 +46,25 @@ DEMO_SCENARIOS = [
 ]
 
 
-def run_interactive():
-    """Mode interactif — conversation texte avec le patient."""
+def run_interactive(vocal: bool = False):
+    """Mode interactif — conversation texte ou vocale avec le patient."""
+    mode = "vocal (micro + haut-parleur)" if vocal else "conversation interactive"
     print("=" * 55)
     print(f"  MediAgent — {MOCK_CLINIC_NAME}")
     print(f"  {MOCK_CLINIC_ADDRESS}")
     print("=" * 55)
-    print("  Mode : conversation interactive")
-    print("  Tapez vos réponses comme si vous étiez le patient.")
+    print(f"  Mode : {mode}")
+    if not vocal:
+        print("  Tapez vos réponses comme si vous étiez le patient.")
+    else:
+        print("  Parlez dans le micro quand vous voyez [Parlez...]")
     print("  Ctrl+C pour quitter.\n")
 
     pipeline = MediAgentPipeline(
         clinic_name=MOCK_CLINIC_NAME,
         clinic_address=MOCK_CLINIC_ADDRESS,
         doctors=MOCK_DOCTORS,
+        vocal=vocal,
     )
 
     try:
@@ -112,6 +117,8 @@ def main():
 
     if "--demo" in sys.argv:
         run_demo()
+    elif "--vocal" in sys.argv:
+        run_interactive(vocal=True)
     else:
         run_interactive()
 
