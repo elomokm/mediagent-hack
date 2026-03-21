@@ -3,32 +3,30 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from analytics.analyze_call import analyze_call
+from agent.summary import generate_call_summary
 
 
-# def analyze_call(text: str, call_id: str, duree: float) -> CallAnalysis:
-def test_analyze_call():
-    # -----------------
-    # Exemple d'utilisation
-    # -----------------
-
-    # (Astuce: trouver le chemin depuis la racine du projet)
+def test_generate_call_summary():
     base_dir = os.path.dirname(os.path.dirname(__file__))
     file_path = os.path.join(
         base_dir, "mockup_data", "analytics", "fake_conversation.txt"
     )
-    print(file_path)
+    
     # 1. Ouvrir et lire le fichier
     with open(file_path, "r", encoding="utf-8") as f:
         conversation_text = f.read()
 
     # 2. Passer ce texte à votre fonction avec les nouveaux paramètres
-    summary = analyze_call(conversation_text, call_id="TEST-1234", duree=324.5)
+    summary = generate_call_summary(conversation_text, call_id="TEST-1234")
 
     # 3. Afficher le résultat pour vérifier
-    print("Analyse de l'appel terminée :")
-    print(summary)
+    print("\n" + "="*50)
+    print("📊 RÉSUMÉ DE L'APPEL GÉNÉRÉ")
+    print("="*50)
+    print(summary.model_dump_json(indent=2))
+    print("="*50 + "\n")
+
 
 
 if __name__ == "__main__":
-    test_analyze_call()
+    test_generate_call_summary()

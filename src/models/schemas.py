@@ -2,16 +2,26 @@
 
 from datetime import datetime
 from enum import Enum
+
 from pydantic import BaseModel, Field
 
 
 class PatientInput(BaseModel):
-    nom: str
-    age: int
-    sexe: str
-    symptomes: list[str]
-    duree_symptomes: str = Field(description="Depuis quand les symptômes sont présents")
-    antecedents: list[str] = Field(default_factory=list)
+    nom: str = Field(
+        description="Nom complet du patient (utiliser 'Inconnu' si non mentionné)."
+    )
+    age: int = Field(description="Âge du patient en années.")
+    sexe: str = Field(description="Sexe biologique du patient (homme, femme ou autre).")
+    symptomes: list[str] = Field(
+        description="Liste des symptômes physiques ou psychologiques rapportés."
+    )
+    duree_symptomes: str = Field(
+        description="Durée depuis l'apparition des symptômes (ex: '2 jours', '1 semaine')."
+    )
+    antecedents: list[str] = Field(
+        default_factory=list,
+        description="Liste des pathologies, allergies ou antécédents médicaux notables.",
+    )
 
 
 class UrgencyScore(BaseModel):
@@ -28,7 +38,9 @@ class CareType(str, Enum):
 
 
 class CareRecommendation(BaseModel):
-    care_type: CareType
+    care_type: CareType = Field(
+        description="Type d'orientation recommandé (doit correspondre exactement aux valeurs de CareType : urgences, generaliste, teleconsultation, pharmacie)"
+    )
     urgency_score: UrgencyScore
     message_patient: str = Field(description="Message clair pour le patient")
 
@@ -51,8 +63,12 @@ class ClinicalSummary(BaseModel):
     patient: PatientInput
     urgency: UrgencyScore
     care_recommendation: CareRecommendation
-    symptoms_summary: str
-    notes_for_provider: str
+    symptoms_summary: str = Field(
+        description="Résumé synthétique et structuré des symptômes pour une lecture rapide par le médecin."
+    )
+    notes_for_provider: str = Field(
+        description="Notes cliniques détaillées, incluant les antécédents, les points de vigilance et tout élément utile au diagnostic."
+    )
 
 
 class SurveyResponse(BaseModel):
@@ -128,13 +144,56 @@ class CallAnalysis(CallAnalysisGenerated):
     duree_secondes: float
 
 
-class CallSummaryStructured(BaseModel):
+# --------- Si l'agent n'a pas de mémoire ----------
+
+
+class CallSummaryGenerated(BaseModel):
+    """Informations extraites et résumées par l'IA à partir de la conversation."""
+
+    patient_nom: str = Field(description="Nom du patient (ou 'Inconnu')")
+    motif_appel: str = Field(description="Raison principale de l'appel")
+    symptomes_reportes: list[str] = Field(description="Liste des symptômes cités")
+    urgency_score: float = Field(
+        ge=0.0, le=1.0, description="Niveau d'urgence évalué (0.0 à 1.0)"
+    )
+    urgency_confidence: float = Field(
+        ge=0.0, le=1.0, description="Confiance dans l'évaluation d'urgence"
+    )
+    orientation: CareType = Field(
+        description="Type d'orientation recommandé (doit correspondre exactement aux valeurs de CareType : urgences, generaliste, teleconsultation, pharmacie)"
+    )
+    rdv_pris: bool = Field(description="Indique si un rendez-vous a été planifié")
+    doctor_name: str | None = Field(
+        default=None, description="Nom du médecin si un RDV est pris"
+    )
+
+
+class CallSummaryStructured(CallSummaryGenerated):
+    """Modèle complet incluant les identifiants système."""
+
     call_id: str
-    patient_nom: str
-    motif_appel: str
-    symptomes_reportes: list[str]
-    urgency_score: float = Field(ge=0.0, le=1.0)
-    urgency_confidence: float = Field(ge=0.0, le=1.0)
-    orientation: CareType
-    rdv_pris: bool
-    doctor_name: str | None = Field(default=None)
+
+
+# -------------- Si l'agent a une mémoire --------------
+
+
+# class CallSummaryStructured(BaseModel):
+#     """Modèle complet incluant les identifiants système."""
+
+#     call_id: str
+#     urgency_confidence: float = Field(
+#         ge=0.0, le=1.0, description="Confiance dans l'évaluation d'urgence"
+#     )
+#     orientation: CareType = Field(
+#         description="Type d'orientation recommandé (doit correspondre exactement aux valeurs de CareType : urgences, generaliste, teleconsultation, pharmacie)"
+#     )
+#     rdv_pris: bool = Field(description="Indique si un rendez-vous a été planifié")
+#     doctor_name: str | None = Field(
+#         default=None, description="Nom du médecin si un RDV est pris"
+#     )
+#     patient_nom: str = Field(description="Nom du patient (ou 'Inconnu')")
+#     motif_appel: str = Field(description="Raison principale de l'appel")
+#     symptomes_reportes: list[str] = Field(description="Liste des symptômes cités")
+#     urgency_score: float = Field(
+#         ge=0.0, le=1.0, description="Niveau d'urgence évalué (0.0 à 1.0)"
+#     )
