@@ -102,23 +102,26 @@ class CallSentiment(str, Enum):
     ANXIEUX = "anxieux"
 
 
-class CallAnalysis(BaseModel):
-    call_id: str
-    duree_secondes: float
+class CallAnalysisGenerated(BaseModel):
+    """Ce que l'IA doit générer"""
     sentiment_global: CallSentiment
     themes_principaux: list[str]
-    qualite_interaction: float = Field(ge=0.0, le=1.0)
-    notes_amelioration: list[str] = Field(default_factory=list)
+    qualite_interaction: float = Field(ge=0.0, le=1.0, description="Score entre 0.0 et 1.0 (ex: 0.85)")
+    notes_amelioration: list[str] = Field(default_factory=list, description="Points d'amélioration")
+
+class CallAnalysis(CallAnalysisGenerated):
+    """Le modèle final complet (qui hérite des champs générés)"""
+    call_id: str
+    duree_secondes: float
 
 
 class CallSummaryStructured(BaseModel):
-    call_id: str = Field(description="Un identifiant unique pour l'appel (à générer s'il n'est pas fourni)")
-    patient_nom: str = Field(description="Le nom complet ou partiel du patient")
-    motif_appel: str = Field(description="La raison principale de l'appel")
-    symptomes_reportes: list[str] = Field(description="Liste des symptômes médicaux formulés par le patient")
-    urgency_score: float = Field(ge=0.0, le=1.0, description="Score d'urgence estimé (entre 0.0 et 1.0)")
-    urgency_confidence: float = Field(ge=0.0, le=1.0, description="Niveau de confiance dans l'estimation de l'urgence (entre 0.0 et 1.0)")
-    orientation: CareType = Field(description="Type de prise en charge recommandé (urgences, generaliste, teleconsultation, pharmacie)")
-    rdv_pris: bool = Field(description="Indique par un booléen si un rendez-vous a été planifié (True) ou non (False)")
-    doctor_name: str | None = Field(default=None, description="Le nom du docteur si un médecin a été consulté ou si un rendez-vous a été pris")
-    resume_libre: str = Field(description="Un résumé précis et rédigé du problème, des actions accomplies et du ressenti observé")
+    call_id: str
+    patient_nom: str
+    motif_appel: str
+    symptomes_reportes: list[str]
+    urgency_score: float = Field(ge=0.0, le=1.0)
+    urgency_confidence: float = Field(ge=0.0, le=1.0)
+    orientation: CareType
+    rdv_pris: bool
+    doctor_name: str | None = Field(default=None)
