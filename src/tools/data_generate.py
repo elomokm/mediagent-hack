@@ -1,4 +1,7 @@
-"""Génération dynamique des données mock de la clinique via emulate()."""
+"""Génération dynamique des données mock de la clinique via emulate().
+
+Basé sur le travail d'Ali (ali/data).
+"""
 
 import json
 import os
