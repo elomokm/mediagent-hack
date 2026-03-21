@@ -145,9 +145,24 @@ class CallSummaryStructured(BaseModel):
     doctor_name: str | None = None
     resume_libre: str
 
+class LeadQualification(BaseModel):
+    new_patient = bool
+    potential_follow = bool
+    motive = str
 
-# class LeadQualification(BaseModel):
-    
+class DailyStats(BaseModel):
+    nb_calls: int = Field(ge=0, le=100000)
+    taux_rdv: int = Field(ge=0.0, le=1.0)
+    patient_name = str
+
+
+# | `DailyStats` | Stats agrégées par jour (volume, taux RDV, etc.) |
+# | `DailyStats` | Stats agrégées par jour (volume, taux RDV, etc.) |
+# 
+
+
+# | `LeadQualification` | Qualif. lead (nouveau patient, potentiel suivi, motif) |
+
 
 
 # | `LeadQualification` | Qualif. lead (nouveau patient, potentiel suivi, motif) |
