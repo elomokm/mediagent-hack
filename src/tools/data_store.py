@@ -93,5 +93,132 @@ def init_db():
     conn.close()
     print("Base de données initialisée avec succès ! Les tables sont prêtes.")
 
+def save_call(call_result: dict) -> int:
+    """Sauvegarde un appel complet en BDD. Retourne l'id de l'appel."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Extraire les champs queryables
+    urgency = call_result.get("urgency", {})
+    care = call_result.get("care", {})
+    appointment = call_result.get("appointment")
+
+    cursor.execute('''
+        INSERT INTO calls (
+            timestamp_start, timestamp_end, status, duration_sec, care_type,
+            urgency_score, urgency_confidence,
+            patient, conversation, urgency, summary, analysis, lead
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        str(call_result.get("timestamp_start", "")),
+        str(datetime.now()),
+        call_result.get("status", "TERMINE"),
+        int(call_result.get("duration_seconds", 0)),
+        care.get("care_type", call_result.get("orientation", "")),
+        urgency.get("score", 0),
+        urgency.get("confidence", 0),
+        json.dumps(call_result.get("patient", {}), ensure_ascii=False),
+        json.dumps(call_result.get("conversation", []), ensure_ascii=False),
+        json.dumps(urgency, ensure_ascii=False),
+        json.dumps(call_result.get("summary", {}), ensure_ascii=False),
+        json.dumps(call_result.get("analysis", {}), ensure_ascii=False),
+        json.dumps(call_result.get("lead", {}), ensure_ascii=False),
+    ))
+
+    call_id = cursor.lastrowid
+
+    # Sauvegarder le RDV si présent
+    if appointment and appointment.get("booked"):
+        save_appointment(
+            cursor, call_id,
+            appointment.get("doctor_id", ""),
+            call_result.get("patient", {}).get("nom", "Inconnu"),
+            appointment.get("slot", ""),
+            appointment.get("confirmation_id", ""),
+        )
+
+    conn.commit()
+    conn.close()
+    print(f"[BDD] Appel #{call_id} sauvegardé.")
+    return call_id
+
+
+def save_appointment(cursor, call_id: int, doctor_id: str, patient_name: str,
+                     slot: str, confirmation_id: str):
+    """Insère un RDV dans la table appointments."""
+    cursor.execute('''
+        INSERT INTO appointments (call_id, doctor_id, patient_name, slot_start, confirmed, confirmation_id)
+        VALUES (?, ?, ?, ?, 1, ?)
+    ''', (call_id, doctor_id, patient_name, slot, confirmation_id))
+
+
+def update_call_analytics(call_id: int, analysis: dict | None = None, lead: dict | None = None):
+    """Met à jour les champs analytics d'un appel existant."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if analysis:
+        cursor.execute('UPDATE calls SET analysis = ? WHERE id = ?',
+                        (json.dumps(analysis, ensure_ascii=False), call_id))
+    if lead:
+        cursor.execute('UPDATE calls SET lead = ? WHERE id = ?',
+                        (json.dumps(lead, ensure_ascii=False), call_id))
+
+    conn.commit()
+    conn.close()
+
+
+def get_calls_by_date(date: str) -> list[dict]:
+    """Récupère tous les appels d'une date (format YYYY-MM-DD)."""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT * FROM calls WHERE DATE(timestamp_start) = ?
+    ''', (date,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    results = []
+    for row in rows:
+        r = dict(row)
+        # Dé-sérialiser les JSON blobs
+        for key in ["patient", "conversation", "urgency", "summary", "analysis", "lead"]:
+            if r.get(key):
+                try:
+                    r[key] = json.loads(r[key])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+        results.append(r)
+
+    return results
+
+
+def get_all_calls() -> list[dict]:
+    """Récupère tous les appels."""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM calls ORDER BY timestamp_start DESC')
+    rows = cursor.fetchall()
+    conn.close()
+
+    results = []
+    for row in rows:
+        r = dict(row)
+        for key in ["patient", "conversation", "urgency", "summary", "analysis", "lead"]:
+            if r.get(key):
+                try:
+                    r[key] = json.loads(r[key])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+        results.append(r)
+
+    return results
+
+
 if __name__ == "__main__":
     init_db()
