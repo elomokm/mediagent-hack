@@ -7,10 +7,10 @@ def extract_ai_analysis(text: str) -> CallAnalysisGenerated:
     """Analyse le texte et renvoie un dictionnaire d'insights.
     Exemple de format attendu :
     {
-        "sentiment_global": "positif",
+        "sentiment_global": "neutre",
         "themes_principaux": ["sujet 1", "sujet 2"],
-        "qualite_interaction": 0.9,
-        "notes_amelioration": ["note 1"]
+        "qualite_interaction": 0.5,
+        "notes_amelioration": ["note 1", "note 2"]
     }"""
     return emulate()
 
