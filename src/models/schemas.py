@@ -3,7 +3,7 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class PatientInput(BaseModel):
@@ -103,14 +103,23 @@ class CallSentiment(str, Enum):
 
 
 class CallAnalysisGenerated(BaseModel):
-    """Ce que l'IA doit générer"""
+    """ Généré par le modèle"""
     sentiment_global: CallSentiment
     themes_principaux: list[str]
-    qualite_interaction: float = Field(ge=0.0, le=1.0, description="Score entre 0.0 et 1.0 (ex: 0.85)")
-    notes_amelioration: list[str] = Field(default_factory=list, description="Points d'amélioration")
+    qualite_interaction: float = Field(ge=0.0, le=1.0)
+    notes_amelioration: list[str] = Field(default_factory=list)
+
+    @field_validator("sentiment_global", mode="before")
+    @classmethod
+    def lowercase_sentiment(cls, v):
+        if isinstance(v, str):
+            return v.lower()
+        return v
+
 
 class CallAnalysis(CallAnalysisGenerated):
     """Le modèle final complet (qui hérite des champs générés)"""
+
     call_id: str
     duree_secondes: float
 
