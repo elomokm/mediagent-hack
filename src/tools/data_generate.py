@@ -3,9 +3,13 @@ import sqlite3
 import json
 from dotenv import load_dotenv
 from OpenHosta import emulate
+
+import sys
+# Ajoute la racine du projet ("mediagent-hack") au PATH
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from src.tools.data_store import get_connection, init_db
 
-# Charger les variables d'environnement (comme OPENAI_API_KEY) depuis le fichier .env
 load_dotenv()
 
 def generate_data() -> dict:
@@ -39,28 +43,24 @@ def generate_data() -> dict:
     return emulate()
 
 def main():
-    if not os.getenv("OPENAI_API_KEY"):
-        print("❌ ERREUR : La variable d'environnement OPENAI_API_KEY n'est pas définie dans le fichier .env")
+    if not os.getenv("OPENHOSTA_DEFAULT_MODEL_API_KEY"):
+        print(" ERREUR : La variable d'environnement OPENAI_API_KEY n'est pas définie dans le fichier .env")
         print("Veuillez rajouter votre clé API dans le fichier .env avant d'exécuter ce script.")
         return
 
-    print("⏳ Génération des données en cours via OpenHosta... (Cela peut prendre environ 30 secondes à 1 minute)")
     data = generate_data()
     
     if not isinstance(data, dict):
-        print("❌ ERREUR : Les données générées ne sont pas un dictionnaire Python valide.")
+        print(" ERREUR : Les données générées ne sont pas un dictionnaire Python valide.")
         print(data)
         return
         
-    print("✅ Données générées avec succès ! Injection dans la base de données SQLite...")
     
-    # 0. S'assurer que les tables existent
     init_db()
     
     conn = get_connection()
     cursor = conn.cursor()
     
-    # 1. Insertion de la clinique
     clinique = data.get("clinique", {})
     cursor.execute('''
         INSERT INTO clinics (nom, adresse, telephone, horaires)
@@ -73,7 +73,6 @@ def main():
     ))
     clinic_id = cursor.lastrowid
     
-    # 2. Insertion des médecins
     medecins = data.get("medecins", [])
     doctor_ids = []
     for med in medecins:
@@ -90,11 +89,9 @@ def main():
         ))
         doctor_ids.append(cursor.lastrowid)
 
-    # 3. Insertion des plannings
     plannings = data.get("plannings", [])
     for plan in plannings:
         doc_idx = plan.get("doctor_index", 0)
-        # Assurer que l'index n'est pas "out of bound" si l'IA s'est trompée
         if doc_idx < len(doctor_ids):
             doc_id = doctor_ids[doc_idx]
         else:
@@ -112,7 +109,6 @@ def main():
     conn.commit()
     conn.close()
     
-    print("🎉 Merveilleux ! Les données ont été insérées avec succès dans `data/mediagent.db` !")
 
 if __name__ == "__main__":
     main()
