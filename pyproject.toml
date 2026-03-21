@@ -1,0 +1,17 @@
+[project]
+name = "mediagent-hack"
+version = "0.1.0"
+description = "Agent IA de pré-tri médical — Hackathon Hand-e"
+requires-python = ">=3.11"
+dependencies = [
+    "openhosta",
+    "pydantic>=2.0",
+    "openai",
+    "python-dotenv",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
