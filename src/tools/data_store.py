@@ -56,6 +56,8 @@ def init_db():
             status TEXT,
             duration_sec INTEGER,
             care_type TEXT,
+            urgency_score REAL,      -- queryable pour stats
+            urgency_confidence REAL, -- queryable pour stats
             patient TEXT, -- JSON blob
             conversation TEXT, -- JSON blob
             urgency TEXT, -- JSON blob
