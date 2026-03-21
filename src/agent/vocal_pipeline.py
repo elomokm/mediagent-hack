@@ -15,6 +15,7 @@ from openai import OpenAI
 from src.models.schemas import PatientInput
 from src.tools.scheduling import find_available_slots, find_alternative_doctor, book_slot
 from src.tools.voice import text_to_speech, speech_to_text
+from src.agent.post_call import run_post_call_analytics
 
 load_dotenv()
 
@@ -152,8 +153,12 @@ class VocalPipeline:
             print("  ⚠️  TRANSFERT SAMU")
         print("=" * 55)
 
-        # TODO: lancer les analyses OpenHosta post-appel ici
-        # (triage score, analyze_call, qualify_lead)
+        # Persistence + analytics post-appel
+        conversation_text = "\n".join(
+            f"{m['role'].capitalize()}: {m['content']}"
+            for m in self.messages if m["role"] in ("user", "assistant")
+        )
+        run_post_call_analytics(result, conversation_text)
 
         return result
 

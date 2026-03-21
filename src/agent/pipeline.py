@@ -12,6 +12,7 @@ from src.agent.care_router import qualify_care_type
 from src.agent.doctor_matcher import match_doctor
 from src.models.schemas import CareType, PatientInput
 from src.tools.scheduling import find_available_slots, find_alternative_doctor, book_slot
+from src.agent.post_call import run_post_call_analytics
 
 MAX_CONVERSATION_TURNS = 10
 
@@ -196,6 +197,10 @@ class MediAgentPipeline:
             print(f"  RDV         : {appointment_info['slot']}")
             print(f"  Confirmation: {appointment_info['confirmation_id']}")
         print("=" * 55)
+
+        # Persistence + analytics post-appel
+        conversation_text = "\n".join(self.history)
+        run_post_call_analytics(result, conversation_text)
 
         return result
 
