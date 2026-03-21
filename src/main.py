@@ -106,13 +106,40 @@ def run_demo():
         print(format_stats_terminal(stats))
 
 
+def run_vocal():
+    """Mode vocal — conversation streaming OpenAI + décisions OpenHosta."""
+    from src.agent.vocal_pipeline import VocalPipeline
+
+    print("=" * 55)
+    print(f"  MediAgent — {MOCK_CLINIC_NAME}")
+    print(f"  {MOCK_CLINIC_ADDRESS}")
+    print("=" * 55)
+    print("  Mode : vocal (micro + haut-parleur)")
+    print("  Parlez dans le micro quand vous voyez [Parlez...]")
+    print("  Ctrl+C pour quitter.\n")
+
+    pipeline = VocalPipeline(
+        clinic_name=MOCK_CLINIC_NAME,
+        clinic_address=MOCK_CLINIC_ADDRESS,
+        doctors=MOCK_DOCTORS,
+    )
+
+    try:
+        result = pipeline.handle_call()
+    except KeyboardInterrupt:
+        print("\n\nAppel interrompu.")
+        return
+
+    print(f"\n[STATUS] Appel terminé — statut : {result['status']}")
+
+
 def main():
     init_db()
 
     if "--demo" in sys.argv:
         run_demo()
     elif "--vocal" in sys.argv:
-        run_interactive(vocal=True)
+        run_vocal()
     else:
         run_interactive()
 
