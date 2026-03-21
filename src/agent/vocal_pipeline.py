@@ -18,28 +18,18 @@ load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENHOSTA_DEFAULT_MODEL_API_KEY"))
 
-SYSTEM_PROMPT = """Tu es l'assistant téléphonique de la clinique {clinic_name}, située au {clinic_address}.
+SYSTEM_PROMPT = """Tu es l'assistant téléphonique de la clinique {clinic_name}, au {clinic_address}.
 
-TON RÔLE : accueillir les patients au téléphone, collecter leurs informations et leurs symptômes.
+STYLE : Sois BREF. 1-2 phrases max par réponse. Chaleureux mais efficace. Pas de jargon médical. Ne fais JAMAIS de diagnostic. Ne mentionne le 15 (SAMU) que si les symptômes sont graves.
 
-RÈGLES STRICTES :
-- Sois chaleureux, empathique et professionnel
-- Pose UNE question à la fois
-- Pas de jargon médical
-- Tu ne fais JAMAIS de diagnostic
-- Rappelle "En cas de doute, appelez le 15 (SAMU)"
-
-INFORMATIONS À COLLECTER (dans cet ordre) :
-1. Nom complet
+COLLECTE : Pose UNE question à la fois. Infos à collecter :
+1. Nom
 2. Âge
 3. Symptômes
 4. Depuis quand
-5. Antécédents médicaux
 
-Quand tu as collecté toutes les infos (nom, âge, symptômes, durée), réponds EXACTEMENT avec ce format JSON sur une seule ligne, sans rien d'autre :
-{{"COLLECTE_TERMINEE": true, "nom": "...", "age": ..., "sexe": "...", "symptomes": ["..."], "duree_symptomes": "...", "antecedents": [...]}}
-
-Tant que tu n'as pas toutes les infos, continue la conversation normalement (pas de JSON)."""
+Si le patient donne plusieurs infos d'un coup, ne les redemande pas. Dès que tu as nom + âge + symptômes + durée, réponds UNIQUEMENT avec ce JSON (rien d'autre) :
+{{"COLLECTE_TERMINEE": true, "nom": "...", "age": ..., "sexe": "non précisé", "symptomes": ["..."], "duree_symptomes": "...", "antecedents": []}}"""
 
 MAX_TURNS = 15
 
@@ -190,7 +180,7 @@ class VocalPipeline:
             return None
 
     def _book(self, patient, care) -> dict | None:
-        """Booking — identique au pipeline texte."""
+        """Booking conversationnel — propose des créneaux et laisse le patient choisir."""
         doctor_id = match_doctor(patient, care, self.doctors)
         slots = find_available_slots(doctor_id, self.doctors)
 
@@ -201,27 +191,54 @@ class VocalPipeline:
                 slots = find_available_slots(doctor_id, self.doctors)
 
         if not slots:
-            self._say("Je n'ai pas trouvé de créneau disponible. Nous vous recontacterons.")
+            self._say("Pas de créneau disponible pour le moment. Nous vous rappellerons.")
             return None
 
         matched = next((d for d in self.doctors if d["id"] == doctor_id), None)
         doctor_name = f"Dr. {matched['prenom']} {matched['nom']}" if matched else "un médecin"
 
-        slot = slots[0]
-        date_str = slot.datetime_start.strftime("%d/%m à %Hh%M")
-        self._say(
-            f"Je vous propose un rendez-vous avec {doctor_name}, "
-            f"le {date_str} à {slot.location}. Est-ce que cela vous convient ?"
+        # Proposer 3 créneaux via le LLM streaming pour un choix naturel
+        top_slots = slots[:3]
+        slots_text = ", ".join(
+            s.datetime_start.strftime("%d/%m à %Hh%M") for s in top_slots
         )
 
-        response = speech_to_text()
-        print(f"  Patient: {response}")
+        # Ajouter le contexte booking à la conversation streaming
+        self.messages.append({"role": "system", "content": (
+            f"Le patient a besoin d'un RDV avec {doctor_name} à {top_slots[0].location}. "
+            f"Créneaux disponibles : {slots_text}. "
+            "Propose ces créneaux brièvement et demande lequel convient. "
+            "Quand le patient choisit, réponds avec ce JSON uniquement : "
+            f'{{"RDV_CONFIRME": true, "slot_index": 0}}'
+            " (0 pour le 1er créneau, 1 pour le 2ème, 2 pour le 3ème)"
+        )})
 
-        appointment = book_slot(slot, patient.nom)
-        self._say(
-            f"Votre rendez-vous est confirmé. "
-            f"Numéro de confirmation : {appointment.confirmation_id}."
-        )
+        # Boucle booking (max 3 échanges)
+        chosen_slot = top_slots[0]  # fallback
+        for _ in range(3):
+            agent_text = self._stream_response()
+
+            if "RDV_CONFIRME" in agent_text:
+                try:
+                    start = agent_text.index("{")
+                    end = agent_text.rindex("}") + 1
+                    data = json.loads(agent_text[start:end])
+                    idx = data.get("slot_index", 0)
+                    if 0 <= idx < len(top_slots):
+                        chosen_slot = top_slots[idx]
+                except (ValueError, json.JSONDecodeError):
+                    pass
+                break
+
+            self._say(agent_text)
+            response = speech_to_text()
+            if response:
+                print(f"  Patient: {response}")
+                self.messages.append({"role": "user", "content": response})
+
+        appointment = book_slot(chosen_slot, patient.nom)
+        date_str = chosen_slot.datetime_start.strftime("%d/%m à %Hh%M")
+        self._say(f"C'est noté, rendez-vous le {date_str} avec {doctor_name}. Confirmation numéro {appointment.confirmation_id}.")
 
         return {
             "doctor_id": doctor_id,
