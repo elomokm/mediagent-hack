@@ -107,7 +107,6 @@ def generate_clinical_summary(text: str) -> ClinicalSummary:
     # 2. Assemblage final respectant le schéma ClinicalSummary
     return ClinicalSummary(
         patient=patient,
-        urgency=care_rec.urgency_score,
         care_recommendation=care_rec,
         symptoms_summary=notes.symptoms_summary,
         notes_for_provider=notes.notes_for_provider,

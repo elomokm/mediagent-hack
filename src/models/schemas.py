@@ -61,7 +61,6 @@ class Appointment(BaseModel):
 
 class ClinicalSummary(BaseModel):
     patient: PatientInput
-    urgency: UrgencyScore
     care_recommendation: CareRecommendation
     symptoms_summary: str = Field(
         description="Résumé synthétique et structuré des symptômes pour une lecture rapide par le médecin."
