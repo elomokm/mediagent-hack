@@ -15,8 +15,8 @@ load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENHOSTA_DEFAULT_MODEL_API_KEY"))
 
 SAMPLE_RATE = 16000
-SILENCE_THRESHOLD = 0.02
-SILENCE_DURATION = 1.5  # secondes de silence avant de couper
+SILENCE_THRESHOLD = 0.01   # seuil de volume — plus bas = moins sensible aux pauses
+SILENCE_DURATION = 3.0     # secondes de silence avant de couper — laisser le patient réfléchir
 
 
 def text_to_speech(text: str, voice: str = "nova"):
