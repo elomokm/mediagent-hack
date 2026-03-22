@@ -25,8 +25,7 @@ DEMO_SCENARIOS = [
         "responses": [
             "Bonjour, je suis Jean Dupont, j'ai 35 ans",
             "J'ai des petits maux de tête de temps en temps et je me sens fatigué, depuis environ 5 jours",
-            "Non, pas d'antécédents particuliers",
-            "Oui, c'est parfait",
+            "Oui, ce créneau me convient parfaitement",
         ],
     },
     {

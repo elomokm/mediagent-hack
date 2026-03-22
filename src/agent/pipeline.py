@@ -114,12 +114,21 @@ class MediAgentPipeline:
             "Je vous transfère vers le SAMU (15). Ne raccrochez pas."
         )
         self.timestamp_end = datetime.now()
-        return {
+        result = {
             "status": "TRANSFERE_SAMU",
             "patient": patient.model_dump(),
             "urgency": urgency.model_dump(),
+            "care_type": "urgences",
+            "orientation": "urgences",
             "duration_seconds": (self.timestamp_end - self.timestamp_start).total_seconds(),
+            "timestamp_start": self.timestamp_start,
         }
+
+        # Persistence + analytics post-appel
+        conversation_text = "\n".join(self.history)
+        run_post_call_analytics(result, conversation_text)
+
+        return result
 
     def _book(self, patient, care) -> dict | None:
         doctor_id = match_doctor(patient, care, self.doctors)
