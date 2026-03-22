@@ -15,6 +15,26 @@ def get_daily_kpis(date: str | None = None) -> DailyStats:
     return compute_daily_stats(calls, date)
 
 
+def _get_care_type(c: dict) -> str:
+    """Extrait le care_type d'un appel — compatible BDD et pipeline."""
+    care = c.get("care")
+    if isinstance(care, dict):
+        return care.get("care_type", "inconnu")
+    return c.get("care_type", c.get("orientation", "inconnu"))
+
+
+def _get_urgency_score(c: dict) -> float:
+    """Extrait le score d'urgence — compatible BDD (colonne) et pipeline (dict)."""
+    # BDD : colonne directe urgency_score
+    if isinstance(c.get("urgency_score"), (int, float)):
+        return c["urgency_score"]
+    # Pipeline : dict urgency.score
+    urgency = c.get("urgency", {})
+    if isinstance(urgency, dict):
+        return urgency.get("score", 0)
+    return 0
+
+
 def compute_daily_stats(calls: list[dict], date: str) -> DailyStats:
     """Calcule les KPIs d'une journée à partir d'une liste d'appels.
 
@@ -38,18 +58,19 @@ def compute_daily_stats(calls: list[dict], date: str) -> DailyStats:
     total = len(calls)
 
     # Répartition par orientation
-    orientations = Counter(c.get("care", {}).get("care_type", "inconnu") if isinstance(c.get("care"), dict) else c.get("care_type", "inconnu") for c in calls)
+    orientations = Counter(_get_care_type(c) for c in calls)
 
-    # Durée moyenne
-    durees = [c.get("duration_seconds", 0) for c in calls]
+    # Durée moyenne (compatible BDD: duration_sec ET pipeline: duration_seconds)
+    durees = [c.get("duration_sec", 0) or c.get("duration_seconds", 0) for c in calls]
     duree_moyenne = sum(durees) / total if total > 0 else 0.0
 
-    # Taux de RDV pris
-    rdv_count = sum(1 for c in calls if c.get("appointment") and c["appointment"].get("booked"))
+    # Taux de RDV pris — vérifier via care_type (generaliste/teleconsultation = RDV probable)
+    rdv_types = {"generaliste", "teleconsultation"}
+    rdv_count = sum(1 for c in calls if _get_care_type(c) in rdv_types)
     taux_rdv = rdv_count / total if total > 0 else 0.0
 
     # Urgences et transferts SAMU
-    urgences = sum(1 for c in calls if c.get("urgency", {}).get("score", 0) >= 0.6)
+    urgences = sum(1 for c in calls if _get_urgency_score(c) >= 0.6)
     transferts = sum(1 for c in calls if c.get("status") == "TRANSFERE_SAMU")
 
     # Sentiment

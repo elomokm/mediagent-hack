@@ -235,7 +235,7 @@ class VocalPipeline:
             return None
 
     def _finalize_booking(self, call_result: dict) -> dict | None:
-        """Confirme le RDV dans le système de scheduling."""
+        """Confirme le RDV dans le système de scheduling — respecte le choix du patient."""
         doctor_name = call_result.get("doctor_name", "")
         matched = next(
             (d for d in self.doctors if f"Dr. {d['prenom']} {d['nom']}" == doctor_name or d['nom'] in doctor_name),
@@ -248,10 +248,27 @@ class VocalPipeline:
         if not slots:
             return None
 
-        # Prendre le créneau le plus proche de ce que l'agent a proposé
-        slot = slots[0]
-        appointment = book_slot(slot, call_result.get("nom", "Inconnu"))
-        date_str = slot.datetime_start.strftime("%d/%m à %Hh%M")
+        # Essayer de matcher le créneau choisi par le patient
+        slot_choisi = call_result.get("slot_choisi", "")
+        chosen_slot = None
+        if slot_choisi:
+            for s in slots:
+                slot_str = s.datetime_start.strftime("%d/%m à %Hh%M")
+                # Matching souple : comparer l'heure
+                if slot_choisi in slot_str or slot_str in slot_choisi:
+                    chosen_slot = s
+                    break
+                # Matcher aussi sur l'heure seule (ex: "10h30")
+                hour_str = s.datetime_start.strftime("%Hh%M")
+                if hour_str in slot_choisi or slot_choisi.replace(":", "h") in hour_str:
+                    chosen_slot = s
+                    break
+
+        if not chosen_slot:
+            chosen_slot = slots[0]  # fallback sur le premier
+
+        appointment = book_slot(chosen_slot, call_result.get("nom", "Inconnu"))
+        date_str = chosen_slot.datetime_start.strftime("%d/%m à %Hh%M")
 
         return {
             "doctor_id": matched["id"],

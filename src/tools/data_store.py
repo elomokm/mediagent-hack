@@ -98,9 +98,28 @@ def save_call(call_result: dict) -> int:
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Extraire les champs queryables
+    # Extraire les champs queryables — compatible pipeline texte ET vocal
     urgency = call_result.get("urgency", {})
+    if isinstance(urgency, str):
+        urgency = {}
+
     care = call_result.get("care", {})
+    if isinstance(care, str):
+        care = {}
+
+    # care_type : depuis care.care_type (texte) ou orientation (vocal)
+    care_type = care.get("care_type", call_result.get("orientation", ""))
+
+    # duration : arrondir
+    duration = int(round(call_result.get("duration_seconds", 0)))
+
+    # timestamp : formater proprement pour SQLite
+    ts_start = call_result.get("timestamp_start")
+    if isinstance(ts_start, datetime):
+        ts_start = ts_start.strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        ts_start = str(ts_start) if ts_start else ""
+
     appointment = call_result.get("appointment")
 
     cursor.execute('''
@@ -110,29 +129,31 @@ def save_call(call_result: dict) -> int:
             patient, conversation, urgency, summary, analysis, lead
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
-        str(call_result.get("timestamp_start", "")),
-        str(datetime.now()),
+        ts_start,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         call_result.get("status", "TERMINE"),
-        int(call_result.get("duration_seconds", 0)),
-        care.get("care_type", call_result.get("orientation", "")),
-        urgency.get("score", 0),
-        urgency.get("confidence", 0),
-        json.dumps(call_result.get("patient", {}), ensure_ascii=False),
-        json.dumps(call_result.get("conversation", []), ensure_ascii=False),
-        json.dumps(urgency, ensure_ascii=False),
-        json.dumps(call_result.get("summary", {}), ensure_ascii=False),
-        json.dumps(call_result.get("analysis", {}), ensure_ascii=False),
-        json.dumps(call_result.get("lead", {}), ensure_ascii=False),
+        duration,
+        care_type,
+        urgency.get("score", 0) if isinstance(urgency, dict) else 0,
+        urgency.get("confidence", 0) if isinstance(urgency, dict) else 0,
+        json.dumps(call_result.get("patient", {}), ensure_ascii=False, default=str),
+        json.dumps(call_result.get("conversation", []), ensure_ascii=False, default=str),
+        json.dumps(urgency, ensure_ascii=False, default=str),
+        json.dumps(call_result.get("summary", {}), ensure_ascii=False, default=str),
+        json.dumps(call_result.get("analysis", {}), ensure_ascii=False, default=str),
+        json.dumps(call_result.get("lead", {}), ensure_ascii=False, default=str),
     ))
 
     call_id = cursor.lastrowid
 
     # Sauvegarder le RDV si présent
-    if appointment and appointment.get("booked"):
+    if appointment and isinstance(appointment, dict) and appointment.get("booked"):
+        patient_data = call_result.get("patient", {})
+        patient_nom = patient_data.get("nom", "Inconnu") if isinstance(patient_data, dict) else "Inconnu"
         save_appointment(
             cursor, call_id,
             appointment.get("doctor_id", ""),
-            call_result.get("patient", {}).get("nom", "Inconnu"),
+            patient_nom,
             appointment.get("slot", ""),
             appointment.get("confirmation_id", ""),
         )
