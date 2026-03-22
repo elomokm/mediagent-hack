@@ -1,10 +1,19 @@
 """Gestion de la conversation téléphonique avec le patient."""
 
+import json
+import os
+
+from dotenv import load_dotenv
+from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from OpenHosta import emulate
 
 from src.models.schemas import PatientInput
+
+load_dotenv()
+
+_client = OpenAI(api_key=os.getenv("OPENHOSTA_DEFAULT_MODEL_API_KEY"))
 
 
 class ConversationStep(BaseModel):
@@ -26,35 +35,55 @@ def generate_greeting(clinic_name: str, clinic_address: str) -> str:
     return emulate()
 
 
+_CONVERSATION_PROMPT = """Analyse la conversation ci-dessous et retourne un JSON avec :
+1. patient_info : les infos extraites (nom, age, sexe, symptomes, duree_symptomes, antecedents)
+2. next_question : la prochaine question à poser
+3. info_complete : true si on a nom + âge + symptômes + durée
+
+Valeurs par défaut si NON mentionné : nom="Inconnu", age=0, sexe="non précisé", symptomes=[], duree_symptomes="non précisé", antecedents=[]
+antecedents est TOUJOURS une liste (jamais un string).
+
+Priorité des questions : 1) nom 2) âge 3) symptômes 4) durée
+Ton empathique et professionnel. UNE question à la fois. 2-3 phrases max.
+
+Retourne UNIQUEMENT le JSON, rien d'autre :
+{"patient_info": {"nom": "...", "age": 0, "sexe": "non précisé", "symptomes": [], "duree_symptomes": "non précisé", "antecedents": []}, "next_question": "...", "info_complete": false}"""
+
+
 def process_conversation_turn(conversation_text: str) -> ConversationStep:
-    """Analyse la conversation et produit en UN SEUL appel : les infos patient extraites + la prochaine question.
+    """Analyse la conversation via API OpenAI directe (plus fiable que emulate pour le parsing)."""
+    response = _client.chat.completions.create(
+        model=os.getenv("OPENHOSTA_DEFAULT_MODEL_NAME", "gpt-4o"),
+        messages=[
+            {"role": "system", "content": _CONVERSATION_PROMPT},
+            {"role": "user", "content": conversation_text},
+        ],
+        response_format={"type": "json_object"},
+    )
 
-    Le texte contient des lignes au format :
-    Agent: <message de l'agent>
-    Patient: <réponse du patient>
+    text = response.choices[0].message.content
+    data = json.loads(text)
 
-    ÉTAPE 1 — Extraction des infos patient :
-    Parcourir TOUTE la conversation et extraire :
-    - nom : nom complet du patient. Ex: "Je suis Elom" → nom = "Elom". "Elom OKOUMASSOUN" → nom = "Elom OKOUMASSOUN"
-    - age : âge en nombre entier. Ex: "j'ai 35 ans" → age = 35
-    - sexe : "homme", "femme" ou "non précisé"
-    - symptomes : liste de TOUS les symptômes médicaux. Ex: "maux de tête et nausées" → ["maux de tête", "nausées"]
-    - duree_symptomes : depuis quand. Ex: "depuis 2 semaines" → "2 semaines"
-    - antecedents : liste des antécédents médicaux. TOUJOURS une liste. Ex: ["hypertension", "diabète"]. Si aucun antécédent → liste vide []
+    patient_data = data.get("patient_info", {})
+    # S'assurer que antecedents est une liste
+    antecedents = patient_data.get("antecedents", [])
+    if not isinstance(antecedents, list):
+        antecedents = []
 
-    Valeurs par défaut si NON mentionné : nom="Inconnu", age=0, sexe="non précisé", symptomes=[], duree_symptomes="non précisé", antecedents=[]
-    IMPORTANT : antecedents doit TOUJOURS être une liste (jamais un string). Pas d'antécédent = []
+    patient = PatientInput(
+        nom=patient_data.get("nom", "Inconnu"),
+        age=patient_data.get("age", 0),
+        sexe=patient_data.get("sexe", "non précisé"),
+        symptomes=patient_data.get("symptomes", []),
+        duree_symptomes=patient_data.get("duree_symptomes", "non précisé"),
+        antecedents=antecedents,
+    )
 
-    ÉTAPE 2 — Prochaine question :
-    Poser UNE SEULE question pour obtenir la prochaine info manquante.
-    Priorité : 1) nom 2) âge 3) symptômes 4) durée des symptômes 5) antécédents
-    Si tout est collecté, demander si le patient a autre chose à ajouter.
-    Ton empathique, professionnel, sans jargon médical.
-
-    ÉTAPE 3 — info_complete :
-    True si nom != "Inconnu" ET age > 0 ET symptomes non vide ET duree_symptomes != "non précisé"
-    """
-    return emulate()
+    return ConversationStep(
+        patient_info=patient,
+        next_question=data.get("next_question", "Comment puis-je vous aider ?"),
+        info_complete=data.get("info_complete", False),
+    )
 
 
 def has_sufficient_info(patient: PatientInput) -> bool:
