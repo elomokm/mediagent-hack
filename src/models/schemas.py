@@ -1,9 +1,9 @@
 """Schémas Pydantic — source de vérité pour tous les types MediAgent."""
 
-from datetime import datetime, date
+from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field, model_validator, ConfigDict
+from pydantic import BaseModel, Field
 
 class PatientInput(BaseModel):
     nom: str = Field(
@@ -222,31 +222,6 @@ class DailyStats(BaseModel):
     transferts_samu: int
     sentiment_distribution: dict[str, int]
     top_motifs: list[str]
-
-
-def cal_ratio(num: int, den: int) -> float:  # ← externe, pas besoin de self
-    return num / den if den else 0.0
-def cal_taux_rdv(self) -> float:
-    return cal_ratio(self.nb_rdv, self.nb_calls)
-def cal_taux_abandon(self) -> float:
-    return cal_ratio(self.nb_abandons, self.nb_calls)
-
-class DailyStats(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-    day: date
-    nb_calls: int = Field(ge=0)
-    nb_rdv: int = Field(ge=0)
-    nb_abandons: int = Field(ge=0)
-    nb_transferts_samu: int = Field(ge=0)
-    taux_rdv: float = 0.0
-    taux_abandon: float = 0.0
-
-    @model_validator(mode="after")
-    def compute(self):
-        object.__setattr__(self, "taux_rdv", cal_taux_rdv(self))
-        object.__setattr__(self, "taux_abandon", cal_taux_abandon(self))
-        return self
 
 class CallLog(BaseModel):
     session: CallSession
