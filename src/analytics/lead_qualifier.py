@@ -1,62 +1,47 @@
 """Qualification des leads patient pour la clinique."""
 
-from OpenHosta import emulate
+import json
+import os
+
+from dotenv import load_dotenv
+from openai import OpenAI
 
 from src.models.schemas import LeadQualification
 
+load_dotenv()
+
+_client = OpenAI(api_key=os.getenv("OPENHOSTA_DEFAULT_MODEL_API_KEY"))
+
+_LEAD_PROMPT = """Qualifie le potentiel business d'un patient pour la clinique à partir de la conversation.
+
+Détermine :
+- est_nouveau_patient : true si première visite (indices : "je ne suis jamais venu", pas de référence à un médecin de la clinique). false si récurrent.
+- motif_contact : "premier_avis", "suivi", "renouvellement", "urgence_ressentie" ou "information"
+- potentiel_suivi : true si pathologie chronique ou besoin de consultations régulières
+- source_decouverte : comment le patient a connu la clinique. null si non mentionné.
+
+Retourne UNIQUEMENT ce JSON :
+{"est_nouveau_patient": true, "motif_contact": "premier_avis", "potentiel_suivi": false, "source_decouverte": null}"""
+
 
 def qualify_lead(conversation_text: str, call_id: str, patient_nom: str) -> LeadQualification:
-    """Qualifie le potentiel business d'un patient pour la clinique.
+    """Qualifie le potentiel business d'un patient."""
+    response = _client.chat.completions.create(
+        model=os.getenv("OPENHOSTA_DEFAULT_MODEL_NAME", "gpt-4o"),
+        messages=[
+            {"role": "system", "content": _LEAD_PROMPT},
+            {"role": "user", "content": conversation_text},
+        ],
+        response_format={"type": "json_object"},
+    )
 
-    Analyse la conversation et détermine :
-
-    - est_nouveau_patient : True si c'est sa première visite/appel à la clinique.
-      Indices : "je ne suis jamais venu", "on m'a recommandé", absence de référence à un médecin traitant de la clinique.
-      False si : "je reviens pour un suivi", "mon médecin habituel", "comme la dernière fois".
-
-    - motif_contact : catégoriser le motif parmi :
-      "premier_avis" (nouveau symptôme, première consultation)
-      "suivi" (contrôle, résultats, évolution)
-      "renouvellement" (ordonnance, certificat)
-      "urgence_ressentie" (le patient pense que c'est urgent)
-      "information" (question, renseignement)
-
-    - potentiel_suivi : True si le patient a une pathologie chronique, des symptômes persistants,
-      ou un besoin de consultations régulières. C'est un indicateur de valeur long terme pour la clinique.
-
-    - source_decouverte : comment le patient a connu la clinique (si mentionné).
-      Ex: "bouche à oreille", "internet", "recommandation médecin", null si non mentionné.
-
-    Raisonner en termes de valeur business pour la clinique :
-    un patient chronique qui revient régulièrement a plus de valeur qu'un passage ponctuel.
-    """
-    raw = _extract_lead_info(conversation_text)
+    data = json.loads(response.choices[0].message.content)
 
     return LeadQualification(
         call_id=call_id,
         patient_nom=patient_nom,
-        est_nouveau_patient=raw.est_nouveau_patient,
-        motif_contact=raw.motif_contact,
-        potentiel_suivi=raw.potentiel_suivi,
-        source_decouverte=raw.source_decouverte,
+        est_nouveau_patient=data.get("est_nouveau_patient", True),
+        motif_contact=data.get("motif_contact", "premier_avis"),
+        potentiel_suivi=data.get("potentiel_suivi", False),
+        source_decouverte=data.get("source_decouverte"),
     )
-
-
-class _LeadInfoGenerated(LeadQualification.__base__):
-    """Schema LLM — sans call_id ni patient_nom (calculés)."""
-    est_nouveau_patient: bool
-    motif_contact: str
-    potentiel_suivi: bool
-    source_decouverte: str | None = None
-
-
-def _extract_lead_info(conversation_text: str) -> _LeadInfoGenerated:
-    """Extrait les informations de qualification lead depuis la conversation.
-
-    Analyse la conversation et détermine :
-    - est_nouveau_patient : True si première visite, False si patient récurrent
-    - motif_contact : "premier_avis", "suivi", "renouvellement", "urgence_ressentie" ou "information"
-    - potentiel_suivi : True si pathologie chronique ou besoin de consultations régulières
-    - source_decouverte : comment le patient a connu la clinique (null si non mentionné)
-    """
-    return emulate()
